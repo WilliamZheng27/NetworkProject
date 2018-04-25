@@ -57,5 +57,5 @@ if __name__ == '__main__':
         print('Error joining files:')
         print(sys.exc_info()[0], sys.exc_info()[1])
 
-recv('127.0.0.1',8255,'GET FILE')
-recv('127.0.0.1',8258,'GET F')
+recv('127.0.0.1',8260,'GET FILE')
+recv('127.0.0.1',8262,'GET F')

@@ -26,6 +26,32 @@ def split(fromfile,todir,chunksize=chunksize):
         fileobj.close()
     return partnum
 
+#下面是传送的部分，详见猪猪的代码
+def sending(ip,port,listennum,filename):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((ip, port))
+    server.listen(listennum)
+    print("Waiting for client's request...")
+    while True:
+        connection, addr = server.accept()  #connection:套接字对象
+        print("Connect IP:", addr[0], "Port:", addr[1])
+        request = connection.recv(struct.calcsize('8s')).decode('utf-8')
+        print("Receive", request, "request")
+        if request == 'GET F':
+            connection.send(filename.encode('utf-8'))
+            connection.send(struct.pack('Q', os.stat(filename).st_size))
+            print("Sending", os.stat(filename).st_size, "bytes")
+            file = open(filename, 'rb')
+            sendsize = 0
+            while True:
+                data = file.read(2 ** 23)
+                if not data:
+                    print('file send over')
+                    break
+                sendsize += len(data)
+                connection.send(data)
+                print('Have sent', sendsize, "bytes")
+        connection.close()
 
 
 if __name__=='__main__':
@@ -44,32 +70,4 @@ if __name__=='__main__':
         else:
             print('split finished:',parts,'parts are in',absto)
 
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(('127.0.0.1', 8258))
-server.listen(1)
-print("Waiting for client's request...")
-
-while True:
-    connection, addr = server.accept()  #connection:套接字对象
-    print("Connect IP:", addr[0], "Port:", addr[1])
-    request = connection.recv(struct.calcsize('8s')).decode('utf-8')
-    print("Receive", request, "request")
-    if request == 'GET F':
-        connection.send('part0002'.encode('utf-8'))
-        connection.send(struct.pack('Q', os.stat('part0002').st_size))
-        print("Sending", os.stat('part0002').st_size, "bytes part0002...")
-
-        file = open('part0002', 'rb')
-        sendsize = 0
-        while True:
-            data = file.read(2 ** 23)
-            if not data:
-                print('file send over')
-                break
-
-            sendsize += len(data)
-            connection.send(data)
-            print('Have sent', sendsize, "bytes")
-
-    connection.close()
+sending('127.0.0.1',8262,1,'part0002')
