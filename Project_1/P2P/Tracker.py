@@ -1,26 +1,40 @@
 import socket
 import threading
 import json
+
 #节点及资源列表
 DataList = []
+
 '''
 file_sha:整个文件的SHA1
 seg_sha:分块的SHA1
 '''
+
+
 class File:
     def __init__(self,file_sha,seg_sha):
         self.file_sha = file_sha
         self.seg_sha = seg_sha
+
+
 '''
-host:节点IP
-port:节点端口
-file_sha:文件列表
+host:节点IP(string)
+port:节点端口(int)
+file:文件列表(list)
+    f in file:
+    f.file_sha(int):整个文件的SHA1
+    f.seg_sha(list):各个分块的SHA1
+        s in seg_sha:
+        s:当前分块的SHA1
 '''
+
+
 class Data:
     def __init__(self,host,port,file):
         self.host = host
         self.port = port
         self.file = file
+
 
 Host = '172.18.34.4'
 Port = '10086'
@@ -28,15 +42,17 @@ Port = '10086'
 sock_server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 sock_server.bind(Host,Port)
 sock_server.listen(5)
-#设定定时器，用于更新节点情况
-timer = threading.Timer(60,keepAlive)
+'''TODO:设定定时器，用于更新节点情况
+#timer = threading.Timer(60,keepAlive)
 timer.start()
+'''
+
 #接收请求
 def main():
     while True:
         sock, = sock_server.accept()
     #创建新线程以处理TCP连接
-    t = threading.Thread(target=connectionHandler, args=(sock))
+    t = threading.Thread(connectionHandler,sock)
     t.start()
 #处理TCP连接
 def connectionHandler(sock):
@@ -117,19 +133,15 @@ def connectionHandler(sock):
         #构造返回报文
         ret_msg = ''
         ret_msg += ret_code
-        ret_msg +='\r\n'
+        ret_msg += '\r\n'
         ret_msg += Host
         ret_msg += '\r\n'
         ret_msg += Port
         ret_msg += '\r\n'
         ret_msg += json.dump(ret_data)
         sock.send(ret_msg)
-
-
+        sock.close()
     
 
 #TODO:更新Peer列表与文件列表
-def keepAlive():
-    for Peer in DataList:
-
-
+#def keepAlive()
