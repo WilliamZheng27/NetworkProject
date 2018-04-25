@@ -93,7 +93,7 @@ def requestFile(file):
     response_port = response[2]
     #返回的Peer数据（json格式）
     response_data = response[3]
-    
+
 # TODO：向Tracker增加文件
 
 # TODO：向Peer请求文件分块
