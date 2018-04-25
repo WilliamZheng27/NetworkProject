@@ -91,26 +91,27 @@ def connectionHandler(sock):
     ret_code = 200
     ret_data = []
     try:
-        if request == 0:
+        if method == 0:
             #监测节点是否已经存在
             for Peer in DataList:
                 if Peer.host == host:
                     raise Exception("Same Host")
             #将节点加入列表
             DataList.append(Data(host,port,body))
-        elif request == 1:
+        elif method == 1:
             #移除节点，若不存在抛出异常
             obj = Data(host,port,body)
             try:
                 DataList.remove(obj)
+                sock.close()
             except ValueError:
                 raise Exception("Host Not Found")
-        elif request == 2:
+        elif method == 2:
             for Peer in DataList:
                 for file in Peer.file:
                     if file.file_sha == file_requested:
                         ret_data.append(Peer.host,Peer.port,file.seg_sha)
-        elif request == 3:
+        elif method == 3:
             for Peer in DataList:
                 if Peer.host == host and Peer.port == port:
                     Peer.file += body
@@ -140,7 +141,7 @@ def connectionHandler(sock):
         ret_msg += '\r\n'
         ret_msg += json.dump(ret_data)
         sock.send(ret_msg)
-        sock.close()
+
     
 
 #TODO:更新Peer列表与文件列表
