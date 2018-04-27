@@ -2,11 +2,12 @@ import socket
 import threading
 import json
 
-#节点及资源列表
-DataList = []
+#节点列表
+PeerList = []
+#文件列表
+FileList = []
 
-
-class RetPeer:
+class Peer:
     def __init__(self,peer_host,peer_port):
         self.peer_host = peer_host
         self.peer_port = peer_port
@@ -14,8 +15,6 @@ class RetPeer:
 file_sha:整个文件的SHA1
 seg_sha:分块的SHA1
 '''
-
-
 class File:
     def __init__(self,file_sha,seg_sha):
         self.file_sha = file_sha
@@ -29,12 +28,6 @@ file:文件列表(list)
     f in file:文件的SHA1
 '''
 
-
-class Data:
-    def __init__(self,host,port,file):
-        self.host = host
-        self.port = port
-        self.file = file
 
 
 Host = '172.18.34.4'
@@ -94,28 +87,27 @@ def connectionHandler(sock):
     try:
         if method == 0:
             #监测节点是否已经存在
-            for Peer in DataList:
+            for Peer in PeerList:
                 if Peer.host == host:
                     raise Exception("Same Host")
             #将节点加入列表
-            DataList.append(Data(host,port,body))
+            PeerList.append(Peer(host,port))
         elif method == 1:
             #移除节点，若不存在抛出异常
-            obj = Data(host,port,body)
             try:
-                DataList.remove(obj)
+                PeerList.remove(Peer(host,port))
                 sock.close()
             except ValueError:
                 raise Exception("Host Not Found")
         elif method == 2:
-            for Peer in DataList:
-                for file in Peer.file:
-                    if file == file_requested:
-                        ret_data.append(RetPeer(Peer.host, Peer.port))
+            for file in FileList:
+                if file.file_sha == file_requested:
+                    ret_data.append(file)
+
         elif method == 3:
-            for Peer in DataList:
-                if Peer.host == host and Peer.port == port:
-                    Peer.file += body
+            for file in FileList:
+                if file.file_sha == file_requested:
+                    file.seg_sha += body
             raise Exception("Host Not Found")
 
     except Exception as e:
