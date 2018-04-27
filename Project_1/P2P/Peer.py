@@ -66,8 +66,10 @@ def commandDispatch(cmd_list):
             print(pe[0] + ' ' + pe[1])
         buffer = b''
         m = 0
+        total = 0
         for n in range(0,int(seg_count)):
-            buffer += recieveFile(peer_list[m][0],int(peer_list[m][1]),file_name,n)
+            buffer += recieveFile(peer_list[m][0],int(peer_list[m][1]),file_name,n,total,file_size)
+            total = len(buffer)
             m = m + 1
             if m == peer_count:
                 m = 0
@@ -157,7 +159,7 @@ def enrollFile(file_name,file_size):
     time.sleep(1)
 
 #向Peer请求文件
-def recieveFile(host,port,file_name,seg_num):
+def recieveFile(host,port,file_name,seg_num,total,file_size):
     sock_peer_send = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     sock_peer_send.connect((host,port))
     request = file_name
@@ -166,7 +168,11 @@ def recieveFile(host,port,file_name,seg_num):
     request += '\r\n'
     request = request.encode()
     sock_peer_send.send(request)
-    buffer = sock_peer_send.recv(chunksize)
+    buffer = b''
+    while len(buffer) < chunksize and len(buffer) + total < file_size:
+        buffer += sock_peer_send.recv(chunksize)
+    print(len(buffer), 'bytes')
+    print(total,'bytes in total')
     sock_peer_send.close()
     return buffer
 #接收其它Peer的请求
@@ -209,63 +215,6 @@ if __name__ == '__main__':
     cmd = input('Please enter your command')
     cmd_split = cmd.split(' ')
     commandDispatch(cmd_split)
-
-
-#向Peer请求文件
-def recieveFile(host,port,file_name,seg_num):
-    sock_peer_recv = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    sock_peer_recv.connect((host,port))
-    request = file_name
-    request += '\r\n'
-    request += str(seg_num)
-    request += '\r\n'
-    request = request.encode()
-    sock_peer_recv.send(request)
-    buffer = sock_peer_recv.recv(chunksize)
-    sock_peer_recv.close()
-    return buffer
-#接收其它Peer的请求
-def requestHandler(source_dir,sock_peer_recv):
-    while True:
-        sock_peer_recv_conn, sock_peer_recv_addr = sock_peer_recv.accept()
-        t = threading.Thread(target=sendFile,args=[source_dir,sock_peer_recv_conn])
-        t.start()
-#向其它Peer发送分块
-def sendFile(source_dir,sock_peer_recv_conn):
-    buffer = b''
-    buffer = sock_peer_recv_conn.recv(1024)
-    buffer = buffer.decode()
-    request = buffer.split('\r\n')
-    file = request[0]
-    seg_num = int(request[1])
-    dir_dst = os.path.join(source_dir,file)
-    if not os.path.exists(dir_dst):
-        print("File not exist")
-    else:
-        inputfile = open(dir_dst, 'rb')  # open the fromfile
-        chunk = b''
-        for num in range(0,seg_num + 1):
-            chunk = inputfile.read(chunksize)
-        sock_peer_recv_conn.send(chunk)
-        inputfile.close()
-    sock_peer_recv_conn.close()
-
-if __name__ == '__main__':
-    readFileList()
-    connectTracker()
-    for file in file_list:
-        enrollFile(file[0],file[1])
-    #初始化监听socket
-    sock_peer_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock_peer_recv.bind((peer_host,p2p_port))
-    sock_peer_recv.listen(listen_num)
-    t = threading.Thread(target=requestHandler, args=[source_dir,sock_peer_recv])
-    t.start()
-    cmd = input('Please enter your command')
-    cmd_split = cmd.split(' ')
-    commandDispatch(cmd_split)
-
-
 
 
 # TODO:文件分割
