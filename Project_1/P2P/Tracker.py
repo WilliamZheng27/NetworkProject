@@ -5,6 +5,11 @@ import json
 #节点及资源列表
 DataList = []
 
+
+class RetPeer:
+    def __init__(self,peer_host,peer_port):
+        self.peer_host = peer_host
+        self.peer_port = peer_port
 '''
 file_sha:整个文件的SHA1
 seg_sha:分块的SHA1
@@ -21,11 +26,7 @@ class File:
 host:节点IP(string)
 port:节点端口(int)
 file:文件列表(list)
-    f in file:
-    f.file_sha(int):整个文件的SHA1
-    f.seg_sha(list):各个分块的SHA1
-        s in seg_sha:
-        s:当前分块的SHA1
+    f in file:文件的SHA1
 '''
 
 
@@ -50,10 +51,10 @@ timer.start()
 #接收请求
 def main():
     while True:
-        sock, = sock_server.accept()
-    #创建新线程以处理TCP连接
-    t = threading.Thread(connectionHandler,sock)
-    t.start()
+        sock, addr = sock_server.accept()
+        #创建新线程以处理TCP连接
+        t = threading.Thread(connectionHandler,sock)
+        t.start()
 #处理TCP连接
 def connectionHandler(sock):
     #接收数据
@@ -109,8 +110,8 @@ def connectionHandler(sock):
         elif method == 2:
             for Peer in DataList:
                 for file in Peer.file:
-                    if file.file_sha == file_requested:
-                        ret_data.append(Peer.host,Peer.port,file.seg_sha)
+                    if file == file_requested:
+                        ret_data.append(RetPeer(Peer.host, Peer.port))
         elif method == 3:
             for Peer in DataList:
                 if Peer.host == host and Peer.port == port:

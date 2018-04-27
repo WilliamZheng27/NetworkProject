@@ -24,6 +24,18 @@ filelist_name = 'filelist.json'
 #本机IP
 peer_host = get_host_ip()
 peer_port = 10086
+p2p_port = 23333
+listen_num = 5
+#Peer初始化
+def main():
+    readFileList()
+    connectTracker()
+    #初始化监听socket
+    sock_peer_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock_peer_recv.bind(peer_host,p2p_port)
+    sock_peer_recv.listen(listen_num)
+
+
 #获取本机IP
 def get_host_ip():
     try:
@@ -72,7 +84,7 @@ def connectTracker():
 def disconnectTracker():
     sock_peer.send(requestPack(1,0,peer_host,peer_port))
     sock_peer.close()
-# TODO：向Tracker请求文件
+# 向Tracker请求文件
 def requestFile(file):
     #发送请求
     sock_peer.send(requestPack(2,file,peer_host,peer_port))
@@ -93,10 +105,23 @@ def requestFile(file):
     response_port = response[2]
     #返回的Peer数据（json格式）
     response_data = response[3]
+    if status_code == 200:
+        peer_list = json.loads(response_data)
+        return peer_list
+    elif status_code == 404:
+        raise Exception('Connection not found. Connect with Tracker before requesting')
 
 # TODO：向Tracker增加文件
 
-# TODO：向Peer请求文件分块
+# TODO：向Peer请求文件
+def recieveFile(peer_list):
+    peer_list = []
+    for peer in peer_list:
+
+
+#TODO:接受其它Peer的请求
+def sendFile(file,seg_num):
+
 
 # TODO:文件分割
 
