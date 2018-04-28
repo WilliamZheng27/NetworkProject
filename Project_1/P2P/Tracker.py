@@ -6,6 +6,7 @@ import json
 PeerList = []
 #文件列表
 FileList = []
+#获取本机IP
 def get_host_ip():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -14,13 +15,16 @@ def get_host_ip():
     finally:
         s.close()
     return ip
+#Peer节点类
 class Peer:
     def __init__(self,peer_host,peer_port):
         self.peer_host = peer_host
         self.peer_port = peer_port
 '''
-file_sha:整个文件的SHA1
-seg_sha:分块的SHA1
+file_sha:文件名
+file_size:文件大小
+host_enrolled:拥有该文件的Peer
+addHost:增加新的Peer
 '''
 class File:
     def __init__(self,file_sha,file_size,host_enrolled=[]):
@@ -29,24 +33,10 @@ class File:
         self.host_enrolled = host_enrolled[:]
     def addHost(self,host,port):
         self.host_enrolled.append(Peer(host,port))
-
-
-'''
-host:节点IP(string)
-port:节点端口(int)
-file:文件列表(list)
-    f in file:文件的SHA1
-'''
-
-
-
+#本机IP
 Host = get_host_ip()
+#用于侦听Peer连接的端口
 Port = 10086
-
-'''TODO:设定定时器，用于更新节点情况
-#timer = threading.Timer(60,keepAlive)
-timer.start()
-'''
 
 
 #处理TCP连接
@@ -84,9 +74,21 @@ def connectionHandler(sock):
         2：请求文件
         3：增加文件
         '''
+        '''
+        返回信息
+        状态码：
+        地址：
+        端口：
+        请求的文件的大小：
+        返回的数据（json格式）
+        '''
+        #状态码
         ret_code = 200
+        #返回的数据
         ret_data = []
+        #请求的文件的大小
         ret_size = 0
+        #返回报文
         ret_msg = ''
         try:
             if method == 0:
@@ -97,35 +99,34 @@ def connectionHandler(sock):
                         raise Exception("Same Host")
                 #将节点加入列表
                 PeerList.append(Peer(host,port))
-                for peer in PeerList:
-                    print(peer.peer_host + ' ' + peer.peer_port)
             elif method == 1:
                 #移除节点，若不存在抛出异常
                 try:
                     print('Connectiong exiting')
+                    #从节点列表中移除节点
                     PeerList.remove(Peer(host,port))
+                    #从文件列表中移除节点
                     for file in FileList:
                         for host_en in file.host_enrolled:
                             if host_en == host:
                                 file.host_enrolled.remove(Peer(host,port))
-                    print(PeerList)
+                    #设置关闭标志
                     flag = 1
                     sock.close()
                 except ValueError:
                     raise Exception("Host Not Found")
+            #请求文件
             elif method == 2:
                 print('Requesting File')
+                #查找被请求的文件
                 for file in FileList:
                     if file.file_sha == file_requested:
-                        print(file.file_sha)
+                        #返回文件的大小
                         ret_size = file.file_size
+                        #返回含有此文件的Peer列表
                         for peer_en in file.host_enrolled:
                             ret_data.append((peer_en.peer_host,peer_en.peer_port))
                 # 构造返回报文
-                print(ret_code)
-                print(Host)
-                print(Port)
-                print(ret_data)
                 ret_msg += str(ret_code)
                 ret_msg += '\r\n'
                 ret_msg += Host
@@ -138,23 +139,22 @@ def connectionHandler(sock):
                 print(ret_msg)
                 ret_msg = ret_msg.encode()
                 sock.send(ret_msg)
+            #向服务器声明拥有某文件
             elif method == 3:
+                #设置flag
                 flag_ext = 0
                 print("Enrolling")
+                #在文件列表中查找该文件
                 for file in FileList:
                     if file.file_sha == file_requested:
                         flag_ext = 1
+                        #添加该Peer到文件信息中
                         file.host_enrolled.append(Peer(host,port))
+                #文件列表中没有该文件，添加到文件列表中
                 if not flag_ext:
                     new_file = File(file_requested,file_size)
                     new_file.addHost(host,port)
                     FileList.append(new_file)
-                for files in FileList:
-                    print(files.file_sha)
-                    print(files.file_size)
-                    print(files.host_enrolled)
-                    for hh in files.host_enrolled:
-                        print(hh.peer_host + ' ' + hh.peer_port)
                 raise Exception("Host Not Found")
 
         except Exception as e:
@@ -171,14 +171,12 @@ def connectionHandler(sock):
             端口(int)
             返回数据(json)
             '''
+        #若关闭标志被设定，则断开Tracker与该Peer的连接
         if flag:
             break
 
 
-    
 
-#TODO:更新Peer列表与文件列表
-#def keepAlive()
 
 if __name__ == '__main__':
     # 服务器初始化
