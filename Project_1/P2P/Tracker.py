@@ -23,8 +23,9 @@ file_sha:整个文件的SHA1
 seg_sha:分块的SHA1
 '''
 class File:
-    def __init__(self,file_sha,host_enrolled=[]):
+    def __init__(self,file_sha,file_size,host_enrolled=[]):
         self.file_sha = file_sha
+        self.file_size = file_size
         self.host_enrolled = host_enrolled[:]
     def addHost(self,host,port):
         self.host_enrolled.append(Peer(host,port))
@@ -66,6 +67,7 @@ def connectionHandler(sock):
         请求的文件：
         主机：
         端口：
+        文件大小：
         内容(json编码)
         '''
         request = buffer.split('\r\n')
@@ -73,6 +75,7 @@ def connectionHandler(sock):
         file_requested = request[1]
         host = request[2]
         port = request[3]
+        file_size = int(request[4])
         print(request)
         '''
         处理requet
@@ -83,6 +86,7 @@ def connectionHandler(sock):
         '''
         ret_code = 200
         ret_data = []
+        ret_size = 0
         ret_msg = ''
         try:
             if method == 0:
@@ -114,6 +118,7 @@ def connectionHandler(sock):
                 for file in FileList:
                     if file.file_sha == file_requested:
                         print(file.file_sha)
+                        ret_size = file.file_size
                         for peer_en in file.host_enrolled:
                             ret_data.append((peer_en.peer_host,peer_en.peer_port))
                 # 构造返回报文
@@ -127,6 +132,8 @@ def connectionHandler(sock):
                 ret_msg += '\r\n'
                 ret_msg += str(Port)
                 ret_msg += '\r\n'
+                ret_msg += str(ret_size)
+                ret_msg += '\r\n'
                 ret_msg += json.dumps(ret_data)
                 print(ret_msg)
                 ret_msg = ret_msg.encode()
@@ -136,11 +143,12 @@ def connectionHandler(sock):
                 for file in FileList:
                     if file.file_sha == file_requested:
                         file.host_enrolled.append(Peer(host,port))
-                new_file = File(file_requested)
+                new_file = File(file_requested,file_size)
                 new_file.addHost(host,port)
                 FileList.append(new_file)
                 for files in FileList:
                     print(files.file_sha)
+                    print(files.file_size)
                     print(files.host_enrolled)
                     for hh in files.host_enrolled:
                         print(hh.peer_host + ' ' + hh.peer_port)

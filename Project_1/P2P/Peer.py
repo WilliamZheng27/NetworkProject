@@ -2,6 +2,7 @@ import json
 import socket
 import threading
 import os
+import math
 '''
 file_sha(string):整个文件的SHA1
 seg_sha(list):分块的SHA1列表
@@ -11,8 +12,9 @@ seg_sha(list):分块的SHA1列表
 
 
 class File:
-    def __init__(self, file_sha, host_enrolled=[]):
+    def __init__(self, file_sha, file_size, host_enrolled=[]):
         self.file_sha = file_sha
+        self.file_size = file_size
         self.host_enrolled = host_enrolled
 
 #获取本机IP
@@ -55,13 +57,18 @@ def commandDispatch(cmd_list):
     elif cmd_func == 'download':
         file_name = cmd_list[1]
         peer_list = requestFile(file_name)
+        file_size = peer_list.pop()
+        seg_count = math.ceil(float(file_size) / float(chunksize))
+        peer_count = len(peer_list)
         for pe in peer_list:
             print(pe[0] + ' ' + pe[1])
-        n = 0
         buffer = b''
-        for peer_en in peer_list:
-            buffer += recieveFile(peer_en[0],int(peer_en[1]),file_name,n)
-            n = n + 1
+        m = 0
+        for n in range(0,int(seg_count)):
+            buffer += recieveFile(peer_list[m][0],int(peer_list[m][1]),file_name,n)
+            m = m + 1
+            if m == peer_count:
+                m = 0
         file = open(file_name, 'wb')
         file.write(buffer)
         file.close()
@@ -71,10 +78,11 @@ def commandDispatch(cmd_list):
 # 读取文件列表
 def readFileList():
     for fname in os.listdir(source_dir):
-        file_list.append(fname)
+        file_dir = os.path.join(source_dir,fname)
+        file_list.append((fname,os.stat(file_dir).st_size()))
         print(fname)
 #制作请求包
-def requestPack(method,request_file,host,port):
+def requestPack(method,request_file,host,port,size=0):
     request = ''
     if int (method) == 0 or int(method) == 1:
         request += method
@@ -83,6 +91,8 @@ def requestPack(method,request_file,host,port):
         request += host
         request += '\r\n'
         request += str(port)
+        request += '\r\n'
+        request += str(size)
         request += '\r\n'
         request += json.dumps(file_list)
         print('requestPack: ', request)
@@ -95,6 +105,8 @@ def requestPack(method,request_file,host,port):
         request += host
         request += '\r\n'
         request += str(port)
+        request += '\r\n'
+        request += str(size)
         request += '\r\n'
         print('requestPack: ', request)
         request = request.encode()
@@ -126,17 +138,20 @@ def requestFile(file):
     response_host = response[1]
     #返回的端口
     response_port = int (response[2])
+    #返回的File大小
+    file_size = int(response[3])
     #返回的File数据（json格式）
-    response_data = response[3]
+    response_data = response[4]
     if status_code == 200:
         peer_list = json.loads(response_data)
+        peer_list.append(file_size)
         return peer_list
     elif status_code == 404:
         raise Exception('Connection not found. Connect with Tracker before requesting')
 
 # 向Tracker增加文件
-def enrollFile(file_name):
-    sock_peer.send(requestPack('3',file_name,peer_host,p2p_port))
+def enrollFile(file_name,file_size):
+    sock_peer.send(requestPack('3',file_name,peer_host,p2p_port,file_size))
 
 #向Peer请求文件
 def recieveFile(host,port,file_name,seg_num):
@@ -151,11 +166,14 @@ def recieveFile(host,port,file_name,seg_num):
     buffer = sock_peer_recv.recv(chunksize)
     sock_peer_recv.close()
     return buffer
-
-
-#接受其它Peer的请求
-def sendFile(source_dir,sock_peer_recv):
-    sock_peer_recv_conn,sock_peer_recv_addr = sock_peer_recv.accept()
+#接收其它Peer的请求
+def requestHandler(source_dir,sock_peer_recv):
+    while True:
+        sock_peer_recv_conn, sock_peer_recv_addr = sock_peer_recv.accept()
+        t = threading.Thread(target=sendFile,args=[source_dir,sock_peer_recv_conn])
+        t.start()
+#向其它Peer发送分块
+def sendFile(source_dir,sock_peer_recv_conn):
     buffer = b''
     buffer = sock_peer_recv_conn.recv(1024)
     buffer = buffer.decode()
@@ -178,12 +196,12 @@ if __name__ == '__main__':
     readFileList()
     connectTracker()
     for file in file_list:
-        enrollFile(file)
+        enrollFile(file[0],file[1])
     #初始化监听socket
     sock_peer_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock_peer_recv.bind((peer_host,p2p_port))
     sock_peer_recv.listen(listen_num)
-    t = threading.Thread(target=sendFile, args=[source_dir,sock_peer_recv])
+    t = threading.Thread(target=requestHandler, args=[source_dir,sock_peer_recv])
     t.start()
     cmd = input('Please enter your command')
     cmd_split = cmd.split(' ')
