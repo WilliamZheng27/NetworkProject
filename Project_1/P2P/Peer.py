@@ -62,17 +62,37 @@ def commandDispatch(cmd_list):
         file_size = peer_list.pop()
         seg_count = math.ceil(float(file_size) / float(chunksize))
         peer_count = len(peer_list)
+        print(seg_count,'segs in total')
         for pe in peer_list:
             print(pe[0] + ' ' + pe[1])
         buffer = b''
+        buffer_list = []
         m = 0
         total = 0
+        peer_status = []
+        for n in range(0,peer_count):
+            peer_status.append(0)
         for n in range(0,int(seg_count)):
-            buffer += recieveFile(peer_list[m][0],int(peer_list[m][1]),file_name,n,total,file_size)
-            total = len(buffer)
-            m = m + 1
-            if m == peer_count:
-                m = 0
+            buffer_list.append(buffer)
+            k = 0
+            while True:
+                if peer_status[k] == 0:
+                    peer_status[k] = 1
+                    t = threading.Thread(target=downloadThreadHandler,args=[peer_status,k,buffer_list,peer_list[k][0],int(peer_list[k][1]),file_name,n,n*chunksize,file_size])
+                    t.start()
+                    break
+                k = k + 1
+                if k == peer_count:
+                    k = 0
+        while True:
+            temp = 0
+            for n in peer_status:
+                temp += n
+            if not temp:
+                break
+        print(len(buffer_list),'segs received')
+        for buf in buffer_list:
+            buffer += buf
         file = open(file_name, 'wb')
         file.write(buffer)
         file.close()
@@ -200,6 +220,11 @@ def sendFile(source_dir,sock_peer_recv_conn):
         sock_peer_recv_conn.send(chunk)
         inputfile.close()
     sock_peer_recv_conn.close()
+#新的下载线程
+def downloadThreadHandler(peer_status,peer_num,buffer_list,host,port,file_name,n,total,file_size):
+    buffer_list[n] = recieveFile(host, port, file_name, n, total, file_size)
+    peer_status[peer_num] = 0
+
 
 if __name__ == '__main__':
     readFileList()
