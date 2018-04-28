@@ -139,13 +139,16 @@ def connectionHandler(sock):
                 ret_msg = ret_msg.encode()
                 sock.send(ret_msg)
             elif method == 3:
+                flag_ext = 0
                 print("Enrolling")
                 for file in FileList:
                     if file.file_sha == file_requested:
+                        flag_ext = 1
                         file.host_enrolled.append(Peer(host,port))
-                new_file = File(file_requested,file_size)
-                new_file.addHost(host,port)
-                FileList.append(new_file)
+                if not flag_ext:
+                    new_file = File(file_requested,file_size)
+                    new_file.addHost(host,port)
+                    FileList.append(new_file)
                 for files in FileList:
                     print(files.file_sha)
                     print(files.file_size)
