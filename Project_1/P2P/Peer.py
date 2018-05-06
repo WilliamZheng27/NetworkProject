@@ -4,6 +4,11 @@ import threading
 import os
 import math
 import time
+from flask import Flask
+from flask import request
+from flask import Response
+from flask import jsonify
+from flask import make_response
 '''
 file_sha(string):整个文件的SHA1
 seg_sha(list):分块的SHA1列表
@@ -225,10 +230,21 @@ def downloadThreadHandler(peer_status,peer_num,buffer_list,host,port,file_name,n
     buffer_list[n] = recieveFile(host, port, file_name, n, total, file_size)
     peer_status[peer_num] = 0
 
+# 初始化本地服务器以运行UI
+app = Flask(__name__)
 
+@app.route('/', methods=['GET'])
+def UIrequest():
+    ins = request.args.get('method')
+    print(ins)
+    if ins == 'local-files':
+        print(file_list)
+        return jsonify(file_list)
+        #return jsonify(file_list)
 if __name__ == '__main__':
     readFileList()
     connectTracker()
+    app.run()
     for file in file_list:
         enrollFile(file[0],file[1])
     #初始化监听socket
