@@ -31,6 +31,7 @@ class Network:
         if self.send_status:
             raise Exception,'Already connected'
         self.sock_send.connect((target_ip,target_port))
+        self.target_ip = target_ip
         self.send_status = 1
 
     def disconnect(self):
@@ -46,16 +47,18 @@ class Network:
         self.sock_recv.listen(max_listen_num)
         t = threading.Thread(target=self.__thread_accept,args=[call_back_request_handler])
         t.start()
+        self.recv_status = 1
 
     def stop_listen(self):
         if not self.recv_status:
             raise Exception,'Not listening'
         self.sock_recv.close()
+        self.recv_status = 0
 
     def request(self, target_ip, target_port, method, keep_alive, data=''):
         if not self.send_status:
             self.connect(target_ip,target_port)
-        pkg = self.__pack_request(method,self.target_ip,self.target_port,len(data),keep_alive,data)
+        pkg = self.__pack_request(method,target_ip,target_port,len(data),keep_alive,data)
         self.__send(self.sock_send, pkg)
         respose = b''
         respose += self.recieve(self.sock_send,request_len)
@@ -111,7 +114,7 @@ class Network:
         respose += '\r\n'
         respose = respose.encode()
         return respose
-    #TODO
+
     def __unpack_request(self,buffer):
         buffer.decode()
         buffer = buffer.spilt('\r\n')

@@ -15,7 +15,35 @@
   - Dest Port
   - Keep Alive
   - Body Len
+
 - 数据体
+
+  ​
+
+  ## 路由数据交换协议
+
+  基于上一协议框架，为路由器之间进行信息交换设计的协议
+
+  ### Method
+
+  | Method/Status Code |  Data  |   功能   |
+  | :----------------: | :----: | :----: |
+  |         0          |  JSON  | 发送路由变更 |
+  |         1          | binary | 发送数据包  |
+  |        200         |   -    |   正常   |
+
+  ### Keep Alive
+
+  考虑到端口限制，发送socket即开即用，开完关闭以便与其它路由连接，Keep Alive统一为0
+
+  ### Data
+
+  - Method 0
+    - Dictionary
+    - key：目的路由IP
+    - value：元组
+      - 距离
+      - 下一跳路由IP 
 
 ## Network类
 
@@ -28,5 +56,59 @@ Network类能够实现以下功能
 - 在已建立的连接上发送请求/接受回应
 
 ### Network类图
+
+### Network成员函数
+
+```python
+def __init__(self, network_send_port, network_recv_port)
+```
+
+- 构造函数，接受一个发送端口与一个接受端口。
+
+```python
+def get_host_ip(self)
+```
+
+- 返回值：str类型
+- 返回本机的IP地址
+
+```python
+def connect(self, target_ip, target_port)
+```
+
+- 返回值：无
+- 与指定地址建立连接。若该Network类已建立一个连接，抛出Exception类‘Already connected’异常
+
+```python
+def disconnect(self)
+```
+
+- 返回值：无
+- 断开该Network类建立的连接。若该Network类没有建立连接，抛出Exception类‘Not connected’异常
+
+```python
+def start_listen(self, call_back_request_handler)
+```
+
+- 返回值：无
+- 接受一个函数，在接收端口上初始化一个socket并开始监听，接受连接并将收到的报文解析成一个列表传递给函数参数。如果已经监听，抛出Exception类‘Already listening'异常
+
+```python
+def stop_listen(self)
+```
+
+- 返回值：无
+- 关闭接收端口上的socket。若没有监听，抛出Exception类’Not listening‘异常
+
+```python
+def request(self, target_ip, target_port, method, keep_alive, data)
+```
+
+- 返回值：返回数据解析成的列表
+- 向指定地址以指定method发送一个body部分为data的请求并接受返回数据，解析成列表后返回
+
+
+
+
 
 

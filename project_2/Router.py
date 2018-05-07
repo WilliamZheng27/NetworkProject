@@ -1,55 +1,62 @@
 #-*- coding:utf-8 -*-
-
 import Network
-
+import json
 
 class Router:
-    def __init__(self,router_id,send_port,recv_port,router_routingTable=None):
-        self.id = router_id
+    def __init__(self,send_port,recv_port,link_table,router_routingTable=None):
         self.routingTable = router_routingTable
+        self.link_table = link_table
+        self.send_port = send_port
+        self.recv_port = recv_port
         self.network_obj = Network.Network(send_port,recv_port)
 
-
-    def initialize(self, method = 0):
-
-
-    #TODO:刷新路由表
-    '''
-    Method=0:LS算法
-    Method=1:DV算法
-    '''
-    def renew(self, neighbors,  method=0):
-
-        if method:
-            self.LS(neighbors, route_table_dict)
-        return
-    #TODO:断开路由
-    def disconnect(self):
-        return
-    #TODO:转发数据包
+    #转发数据包
     def routing(self, pkg):
+        dest_ip = pkg.decode().split('\r\n')[3]
+        dest_port = int(pkg.decode().split('\r\n')[4])
+        next_jmp = self.routingTable.get(dest_ip)
+        if next_jmp is None:
+            raise Exception,'Unknown Destination'
+        self.network_obj.request(next_jmp,dest_port,1,0,pkg)
         return
-    #TODO:LS算法
-    def LS(self, neighbor_distance_dict, route_table_dict):
-        '''
-        :param neighbor_distance_dict:字典结构，key为邻居router_id, value为距离
-        :param route_table_dict:字典结构，key为邻居router_id, value为字典{key为目的router_id, value为链路长度}
-        '''
-        neighbor = []
-        for key in neighbor_distance_dict:
-            neighbor.append(key)
 
-        self.routingTable[neighbor[0]] = (neighbor_distance_dict[neighbor[0]], neighbor[0])
-        for key, value in route_table_dict[neighbor[0]].items():
-            self.routingTable[key] = (neighbor_distance_dict[neighbor[0]] + value, neighbor[0])
+class Router_DV(Router):
+    def __init__(self, send_port, recv_port, router_routingTable=None):
+        Router.__init__(self,send_port,recv_port,router_routingTable)
+        self.network_obj.start_listen(self.__msg_handler)
+    #发送本路由的路由信息
+    def send_routing_msg(self):
+        for rt in self.link_table:
+            #逆转毒性处理
+            de_possion = self.routingTable
+            de_possion[rt] = 9999
+            #发送本机路由表
+            self.network_obj.request(rt, self.recv_port, 0, 0, json.dumps(de_possion))
+        return
 
-        for i in range(1, len(neighbor)):
-            if neighbor_distance_dict[neighbor[i]] < self.routingTable[neighbor[i]][0]:
-                self.routingTable[neighbor[i]] = (neighbor_distance_dict[neighbor[i]], neighbor[i])
-            for key, value in route_table_dict[neighbor[i]].items():
-                if self.routingTable[key][0] > value + neighbor_distance_dict[neighbor[i]]:
-                    self.routingTable[key] = (value + neighbor_distance_dict[neighbor[i]], neighbor[i])
-#TODO:DV算法
+    def __msg_handler(self, msg):
+        if msg[0] == 0:
+            self.routing(msg)
+        elif msg[0] == 1:
+            self.recv_routing_msg(msg)
+        elif msg[0] == 2:
+            self.send_routing_msg()
+        return
+    #接受其它路由的路由信息
+    def recv_routing_msg(self, msg):
+        dist = self.routingTable.get(msg[1])
+        neibor_dict = json.loads(msg[7])
+        flag = 0
+        for key in neibor_dict.key():
+            if dist + neibor_dict.get(key) < self.routingTable.get(key):
+                flag = 1
+                self.routingTable[key] = dist + neibor_dict.get(key)
+        #向其他路由发送更新后的路由表
+        if flag:
+            self.send_routing_msg()
+        return
+
+
 
 
 
