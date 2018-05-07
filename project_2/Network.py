@@ -29,20 +29,20 @@ class Network:
 
     def connect(self,target_ip,target_port):
         if self.send_status:
-            raise Exception,'Already connected'
+            raise Exception('Already connected')
         self.sock_send.connect((target_ip,target_port))
         self.target_ip = target_ip
         self.send_status = 1
 
     def disconnect(self):
         if not self.send_status:
-            raise Exception,'Not connected'
+            raise Exception('Not connected')
         self.sock_send.close()
         self.send_status = 0
 
     def start_listen(self, call_back_request_handler):
         if self.recv_status:
-            raise Exception,'Already listening'
+            raise Exception('Already listening')
         self.sock_recv.bind((self.source_ip, self.recv_port))
         self.sock_recv.listen(max_listen_num)
         t = threading.Thread(target=self.__thread_accept,args=[call_back_request_handler])
@@ -51,7 +51,7 @@ class Network:
 
     def stop_listen(self):
         if not self.recv_status:
-            raise Exception,'Not listening'
+            raise Exception('Not listening')
         self.sock_recv.close()
         self.recv_status = 0
 

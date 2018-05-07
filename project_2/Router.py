@@ -16,7 +16,7 @@ class Router:
         dest_port = int(pkg.decode().split('\r\n')[4])
         next_jmp = self.routingTable.get(dest_ip)
         if next_jmp is None:
-            raise Exception,'Unknown Destination'
+            raise Exception('Unknown Destination')
         self.network_obj.request(next_jmp,dest_port,1,0,pkg)
         return
 
@@ -24,6 +24,8 @@ class Router_DV(Router):
     def __init__(self, send_port, recv_port, router_routingTable=None):
         Router.__init__(self,send_port,recv_port,router_routingTable)
         self.network_obj.start_listen(self.__msg_handler)
+        for rt in self.link_table:
+            self.network_obj.request(rt, self.recv_port, 2,0)
     #发送本路由的路由信息
     def send_routing_msg(self):
         for rt in self.link_table:
