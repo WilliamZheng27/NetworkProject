@@ -37,7 +37,7 @@ class RouterDV(Router):
             if link_table[rt][0]:
                 try:
                     self.network_obj.connect(rt, self.recv_port)
-                    self.network_obj.sock_send.settimeout(None)
+                    #self.network_obj.sock_send.settimeout(None)
                     self.routingTable[rt] = [link_table[rt][1], rt]
                     tmp_list = self.network_obj.request(rt, self.recv_port, 2, 0)
                     self.recv_routing_msg(tmp_list)
