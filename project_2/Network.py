@@ -124,9 +124,9 @@ class Network:
         return respose
 
     def __unpack_request(self,buffer):
-        buffer.decode()
-        buffer = buffer.spilt('\r\n')
-        return buffer
+        butter = buffer.decode()
+        butter = butter.spilt('\r\n')
+        return butter
 
 
     def __pack_respond(self,status_code,target_ip,target_port,body_len,body):

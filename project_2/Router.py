@@ -39,7 +39,7 @@ class RouterDV(Router):
                     self.network_obj.connect(rt, self.recv_port)
                     self.network_obj.sock_send.settimeout(None)
                     self.routingTable[rt] = [link_table[rt][1], rt]
-                    self.recv_routing_msg(json.loads(self.network_obj.request(rt, self.recv_port, 2, 0)))
+                    self.recv_routing_msg(json.loads(self.network_obj.request(rt, self.recv_port, 2, 0))[7])
                 except socket.error:
                     link_table[rt][0] = 0
                     continue
