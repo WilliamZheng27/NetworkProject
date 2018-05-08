@@ -37,11 +37,13 @@ class RouterDV(Router):
 
     # 发送本路由的路由信息
     def send_routing_msg(self):
+        print("Sending routing messages...")
         for rt in self.link_table:
             # 逆转毒性处理
             de_possion = self.routingTable
             de_possion[rt] = 9999
             # 发送本机路由表
+            print('Sending to ' + rt + '...')
             self.network_obj.request(rt, self.recv_port, 0, 0, json.dumps(de_possion))
         return
 
@@ -58,6 +60,7 @@ class RouterDV(Router):
     def recv_routing_msg(self, msg):
         dist = self.routingTable.get(msg[1])
         neibor_dict = json.loads(msg[7])
+        print('Recieving routing messages from ' + msg[1] + ' ...')
         flag = 0
         for key in neibor_dict.key():
             if dist + neibor_dict.get(key) < self.routingTable.get(key):
