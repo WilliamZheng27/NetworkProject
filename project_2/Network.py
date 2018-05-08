@@ -31,8 +31,7 @@ class Network:
         return ip
 
     def connect(self, target_ip, target_port):
-        if self.send_status:
-            raise Exception('Already connected')
+        self.sock_send = socket.socket()
         self.sock_send.connect((target_ip, target_port))
         self.target_ip = target_ip
         self.send_status = 1
@@ -69,6 +68,8 @@ class Network:
         body_buff = self.recieve(self.sock_send, body_len)
         body_buff = body_buff.decode()
         respose[7] = body_buff
+        if not keep_alive:
+            self.sock_send.close()
         return respose
 
     def response(self, target_ip, target_port, method, keep_alive, data=''):
