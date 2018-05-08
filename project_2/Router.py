@@ -54,7 +54,7 @@ class RouterDV(Router):
                     itm[0] = 9999
             # 发送本机路由表
             print('Sending to ' + rt + '...')
-            self.network_obj.response(rt, self.recv_port, 0, 0, json.dumps(de_possion))
+            self.network_obj.response(rt, self.send_port, 0, 0, json.dumps(de_possion))
         return
 
     def __msg_handler(self, msg):
