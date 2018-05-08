@@ -3,7 +3,7 @@
 import socket
 import threading
 max_listen_num = 5
-request_len = 59
+request_len = 57
 
 
 class Network:

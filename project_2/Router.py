@@ -39,7 +39,7 @@ class RouterDV(Router):
                     self.network_obj.connect(rt, self.recv_port)
                     self.network_obj.sock_send.settimeout(None)
                     self.routingTable[rt] = [link_table[rt][1], rt]
-                    self.recv_routing_msg(json.loads(self.network_obj.request(rt, self.recv_port, 2, 0))[7])
+                    self.recv_routing_msg(json.loads(self.network_obj.request(rt, self.recv_port, 2, 1))[7])
                 except socket.error:
                     link_table[rt][0] = 0
                     continue
@@ -48,15 +48,16 @@ class RouterDV(Router):
     def send_routing_msg(self):
         print("Sending routing messages...")
         for rt in self.link_table.keys():
-            # 逆转毒性处理
-            de_possion = self.routingTable
-            for key,itm in de_possion.items():
-                if itm[1] == rt and key != itm[1]:
-                    itm[0] = 9999
-            # 发送本机路由表
-            print('Sending to ' + rt + '...')
-            self.network_obj.response(rt, self.send_port, 0, 0, json.dumps(de_possion))
-        return
+            if self.link_table[rt][0]:
+                # 逆转毒性处理
+                de_possion = self.routingTable
+                for key,itm in de_possion.items():
+                    if itm[1] == rt and key != itm[1]:
+                        itm[0] = 9999
+                # 发送本机路由表
+                print('Sending to ' + rt + '...')
+                self.network_obj.response(rt, self.send_port, 0, 0, json.dumps(de_possion))
+            return
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Data_Pack:
