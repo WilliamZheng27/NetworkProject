@@ -40,7 +40,6 @@ class Network:
     def disconnect(self):
         if not self.send_status:
             raise Exception('Not connected')
-        self.sock_send.close()
         self.send_status = 0
 
     def start_listen(self, call_back_request_handler):
@@ -71,9 +70,6 @@ class Network:
         body_buff = self.recieve(self.sock_send, body_len)
         body_buff = body_buff.decode()
         respose[7] = body_buff
-        if not keep_alive:
-            self.sock_send.close()
-            self.send_status = 0
         return respose
 
     def response(self, target_ip, target_port, method, keep_alive, data=''):
