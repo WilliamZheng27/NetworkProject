@@ -40,7 +40,7 @@ class RouterDV(Router):
                     self.network_obj.sock_send.settimeout(None)
                     self.routingTable[rt] = [link_table[rt][1], rt]
                     tmp_list = self.network_obj.request(rt, self.recv_port, 2, 1)
-                    self.recv_routing_msg(json.loads(tmp_list))
+                    self.recv_routing_msg(tmp_list)
                 except socket.error:
                     link_table[rt][0] = 0
                     continue
@@ -75,14 +75,19 @@ class RouterDV(Router):
 
     # 接受其它路由的路由信息
     def recv_routing_msg(self, msg):
-        dist = self.link_table[msg[1]]
+        dist = self.link_table[msg[1]][1]
         neibor_dict = json.loads(msg[7])
         print('Recieving routing messages from ' + msg[1] + ' ...')
         flag = 0
         for key in neibor_dict.keys():
-            if dist + neibor_dict.get(key) < self.routingTable.get(key):
+            if key == self.network_obj.source_ip:
+                continue
+            elif key not in self.routingTable.keys():
                 flag = 1
-                self.routingTable[key] = dist + neibor_dict.get(key)
+                self.routingTable[key] = [dist + neibor_dict[key][0], msg[1]]
+            elif dist + neibor_dict[key][0] < self.routingTable[key][0]:
+                flag = 1
+                self.routingTable[key][0] = dist + neibor_dict[key][0]
         # 向其他路由发送更新后的路由表
         if flag:
             self.send_routing_msg()
