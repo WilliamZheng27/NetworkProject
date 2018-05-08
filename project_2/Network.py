@@ -17,7 +17,7 @@ class Network:
         self.target_ip = ''
         self.target_port = 0
         self.sock_recv = socket.socket()
-        self.sock_connect = None
+        self.sock_connect = {}
         self.recv_status = 0
 
     def get_host_ip(self):
@@ -76,30 +76,32 @@ class Network:
 
     def response(self, target_ip, target_port, method, keep_alive, data=''):
         pkg = self.__pack_request(method,target_ip,target_port,len(data),keep_alive,data)
-        self.__send(self.sock_connect, pkg)
+        self.__send(self.sock_connect[target_ip], pkg)
 
-    def __requestHandler(self,call_back_handler):
+    def __requestHandler(self, ip, call_back_handler):
         while True:
             data = b''
-            data += self.recieve(self.sock_connect,request_len)
+            data += self.recieve(self.sock_connect[ip],request_len)
             data = data.decode()
             data = data.split('\r\n')
             ret = data
             keep_alive = int(data[5])
             body_len = int(data[6])
             data = b''
-            data += self.recieve(self.sock_connect, body_len)
+            data += self.recieve(self.sock_connect[ip], body_len)
             body = data.decode()
             ret += body
             call_back_handler(ret)
             if not keep_alive:
-                self.sock_connect.close()
+                self.sock_connect[ip].close()
+                del self.sock_connect[ip]
                 break
 
     def __thread_accept(self,call_back_request_handler):
         while True:
-            self.sock_connect, ipadrs = self.sock_recv.accept()
-            t = threading.Thread(target=self.__requestHandler,args=[call_back_request_handler])
+            tmp_obj, ipadrs = self.sock_recv.accept()
+            self.sock_connect[ipadrs[0]] = tmp_obj
+            t = threading.Thread(target=self.__requestHandler,args=[ipadrs[0], call_back_request_handler])
             t.start()
 
     def __pack_request(self,method,target_ip,target_port,body_len,keep_alive,body):
@@ -119,8 +121,8 @@ class Network:
         respose += str(body_len)
         respose += '\r\n'
         respose += body
-        respose += '\r\n'
         respose = respose.encode()
+        print(len(respose))
         return respose
 
     def __unpack_request(self,buffer):
