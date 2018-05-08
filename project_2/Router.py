@@ -34,18 +34,19 @@ class RouterDV(Router):
         Router.__init__(self, send_port, recv_port, link_table, router_routing_table)
         self.network_obj.start_listen(self.__msg_handler)
         for rt in self.link_table.keys():
-            if link_table[rt]:
+            if link_table[rt][0]:
                 try:
                     self.network_obj.connect(rt, self.recv_port)
+                    self.routingTable[rt] = [link_table[rt][1], rt]
                     self.network_obj.request(rt, self.recv_port, 2, 0)
                 except socket.error:
-                    link_table[rt] = 0
+                    link_table[rt][0] = 0
                     continue
 
     # 发送本路由的路由信息
     def send_routing_msg(self):
         print("Sending routing messages...")
-        for rt in self.link_table:
+        for rt in self.link_table.keys():
             # 逆转毒性处理
             de_possion = self.routingTable
             de_possion[rt] = 9999
@@ -60,7 +61,10 @@ class RouterDV(Router):
         elif msg[0] == Method_Route_Msg:
             self.recv_routing_msg(msg)
         elif msg[0] == Method_Request_Route:
-            self.link_table[msg[1]] = 1
+            if not self.link_table[msg[1][0]]:
+                self.link_table[msg[1]][0] = 1
+                if msg[1] in self.routingTable.keys() and self.link_table[msg[1]][1] <= self.routingTable[msg[1]][0]
+                    self.routingTable[msg[1]] = [self.link_table[msg[1]][1], msg[1]]
             self.send_routing_msg()
         return
 
