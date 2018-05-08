@@ -76,11 +76,16 @@ class RouterDV(Router):
             self.network_obj.response(msg[1], self.send_port, 5, 0)
             self.recv_routing_msg(msg)
         elif msg[0] == Method_Request_Route:
-            self.link_table[msg[1]][0] = 1
+            flag = 0
             if msg[1] in self.routingTable.keys() and self.link_table[msg[1]][1] <= self.routingTable[msg[1]][0]:
+                flag = 1
                 self.routingTable[msg[1]] = [self.link_table[msg[1]][1], msg[1]]
             elif msg[1] not in self.routingTable.keys():
+                flag = 1
                 self.routingTable[msg[1]] = [self.link_table[msg[1]][1], msg[1]]
+            if flag:
+                self.send_routing_msg(0)
+            self.link_table[msg[1]][0] = 1
             self.send_routing_msg(1, msg[1])
         return
 
