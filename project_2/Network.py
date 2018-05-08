@@ -58,9 +58,8 @@ class Network:
         self.recv_status = 0
 
     def request(self, target_ip, target_port, method, keep_alive, data=''):
-        if not self.send_status:
-            self.connect(target_ip, target_port)
-            self.send_status = 1
+        self.connect(target_ip, target_port)
+        self.send_status = 1
         pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
         self.__send(self.sock_send, pkg)
         respose = b''

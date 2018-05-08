@@ -36,10 +36,10 @@ class RouterDV(Router):
         for rt in self.link_table.keys():
             if link_table[rt][0]:
                 try:
-                    self.network_obj.connect(rt, self.recv_port)
+                    #self.network_obj.connect(rt, self.recv_port)
+                    tmp_list = self.network_obj.request(rt, self.recv_port, 2, 0)
                     #self.network_obj.sock_send.settimeout(None)
                     self.routingTable[rt] = [link_table[rt][1], rt]
-                    tmp_list = self.network_obj.request(rt, self.recv_port, 2, 0)
                     self.recv_routing_msg(tmp_list)
                 except socket.error:
                     link_table[rt][0] = 0
@@ -73,6 +73,7 @@ class RouterDV(Router):
         if msg[0] == Method_Data_Pack:
             self.routing(msg)
         elif msg[0] == Method_Route_Msg:
+            self.network_obj.response(msg[1], self.send_port, 200, 0)
             self.recv_routing_msg(msg)
         elif msg[0] == Method_Request_Route:
             self.link_table[msg[1]][0] = 1
