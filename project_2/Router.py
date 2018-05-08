@@ -39,15 +39,25 @@ class RouterDV(Router):
                     self.network_obj.connect(rt, self.recv_port)
                     self.network_obj.sock_send.settimeout(None)
                     self.routingTable[rt] = [link_table[rt][1], rt]
-                    tmp_list = self.network_obj.request(rt, self.recv_port, 2, 1)
+                    tmp_list = self.network_obj.request(rt, self.recv_port, 2, 0)
                     self.recv_routing_msg(tmp_list)
                 except socket.error:
                     link_table[rt][0] = 0
                     continue
 
     # 发送本路由的路由信息
-    def send_routing_msg(self):
+    def send_routing_msg(self, type, request_ip=''):
         print("Sending routing messages...")
+        if type:
+            # 逆转毒性处理
+            de_possion = self.routingTable
+            for key, itm in de_possion.items():
+                if itm[1] == request_ip and key != itm[1]:
+                    itm[0] = 9999
+            self.network_obj.response(request_ip, self.send_port, 0, 0, json.dumps(de_possion))
+            # 发送本机路由表
+            print('Sending to ' + request_ip + '...')
+            return
         for rt in self.link_table.keys():
             if self.link_table[rt][0]:
                 # 逆转毒性处理
@@ -57,7 +67,7 @@ class RouterDV(Router):
                         itm[0] = 9999
                 # 发送本机路由表
                 print('Sending to ' + rt + '...')
-                self.network_obj.response(rt, self.send_port, 0, 0, json.dumps(de_possion))
+                self.network_obj.request(rt, self.recv_port, 0, 0, json.dumps(de_possion))
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Data_Pack:
@@ -70,7 +80,7 @@ class RouterDV(Router):
                 self.routingTable[msg[1]] = [self.link_table[msg[1]][1], msg[1]]
             elif msg[1] not in self.routingTable.keys():
                 self.routingTable[msg[1]] = [self.link_table[msg[1]][1], msg[1]]
-            self.send_routing_msg()
+            self.send_routing_msg(1, msg[1])
         return
 
     # 接受其它路由的路由信息
@@ -90,7 +100,7 @@ class RouterDV(Router):
                 self.routingTable[key][0] = dist + neibor_dict[key][0]
         # 向其他路由发送更新后的路由表
         if flag:
-            self.send_routing_msg()
+            self.send_routing_msg(0)
         return
 
 
