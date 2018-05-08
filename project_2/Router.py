@@ -33,7 +33,7 @@ class RouterDV(Router):
     def __init__(self, send_port, recv_port, link_table, router_routing_table=None):
         Router.__init__(self, send_port, recv_port, link_table, router_routing_table)
         self.network_obj.start_listen(self.__msg_handler)
-        for rt in self.link_table.key():
+        for rt in self.link_table.keys():
             if link_table[rt]:
                 try:
                     self.network_obj.connect(rt, self.recv_port)
