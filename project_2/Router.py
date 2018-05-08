@@ -70,7 +70,7 @@ class RouterDV(Router):
         neibor_dict = json.loads(msg[7])
         print('Recieving routing messages from ' + msg[1] + ' ...')
         flag = 0
-        for key in neibor_dict.key():
+        for key in neibor_dict.keys():
             if dist + neibor_dict.get(key) < self.routingTable.get(key):
                 flag = 1
                 self.routingTable[key] = dist + neibor_dict.get(key)
