@@ -12,6 +12,7 @@ class Network:
         self.recv_port = network_recv_port
         self.source_ip = self.get_host_ip()
         self.sock_send = socket.socket()
+        self.sock_send.settimeout(3)
         self.send_status = 0
         self.target_ip = ''
         self.target_port = 0

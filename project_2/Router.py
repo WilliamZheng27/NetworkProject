@@ -73,6 +73,7 @@ class RouterDV(Router):
 
     # 接受其它路由的路由信息
     def recv_routing_msg(self, msg):
+        print('Recieving route messages from ' + msg[1] + '...')
         dist = self.routingTable.get(msg[1])
         neibor_dict = json.loads(msg[7])
         print('Recieving routing messages from ' + msg[1] + ' ...')
