@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import Network
+import socket
 import json
 
 Method_Route_Msg = '0'
@@ -29,11 +30,17 @@ class Router:
 
 
 class RouterDV(Router):
-    def __init__(self, send_port, recv_port, router_routing_table=None):
-        Router.__init__(self, send_port, recv_port, router_routing_table)
+    def __init__(self, send_port, recv_port, link_table, router_routing_table=None):
+        Router.__init__(self, send_port, recv_port, link_table, router_routing_table)
         self.network_obj.start_listen(self.__msg_handler)
-        for rt in self.link_table:
-            self.network_obj.request(rt, self.recv_port, 2, 0)
+        for rt in self.link_table.key():
+            if link_table[rt]:
+                try:
+                    self.network_obj.connect(rt, self.recv_port)
+                    self.network_obj.request(rt, self.recv_port, 2, 0)
+                except socket.error:
+                    link_table[rt] = 0
+                    continue
 
     # 发送本路由的路由信息
     def send_routing_msg(self):
@@ -53,6 +60,7 @@ class RouterDV(Router):
         elif msg[0] == Method_Route_Msg:
             self.recv_routing_msg(msg)
         elif msg[0] == Method_Request_Route:
+            self.link_table[msg[1]] = 1
             self.send_routing_msg()
         return
 
