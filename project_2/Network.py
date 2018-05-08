@@ -72,22 +72,27 @@ class Network:
             self.sock_send.close()
         return respose
 
+    def response(self, target_ip, target_port, method, keep_alive, data=''):
+        pkg = self.__pack_request(method,target_ip,target_port,len(data),keep_alive,data)
+        self.__send(self.sock_connect, pkg)
 
     def __requestHandler(self,call_back_handler):
-        data = b''
-        data += self.recieve(self.sock_connect,request_len)
-        data = data.decode()
-        data = data.split('\r\n')
-        ret = data
-        keep_alive = int(data[5])
-        body_len = int(data[6])
-        data = b''
-        data += self.recieve(self.sock_connect, body_len)
-        body = data.decode()
-        ret += body
-        call_back_handler(ret)
-        if not keep_alive:
-            self.sock_connect.close()
+        while True:
+            data = b''
+            data += self.recieve(self.sock_connect,request_len)
+            data = data.decode()
+            data = data.split('\r\n')
+            ret = data
+            keep_alive = int(data[5])
+            body_len = int(data[6])
+            data = b''
+            data += self.recieve(self.sock_connect, body_len)
+            body = data.decode()
+            ret += body
+            call_back_handler(ret)
+            if not keep_alive:
+                self.sock_connect.close()
+                break
 
     def __thread_accept(self,call_back_request_handler):
         while True:
