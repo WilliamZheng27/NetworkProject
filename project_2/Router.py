@@ -12,7 +12,7 @@ Method_Exit_Msg = '4'
 
 class Router:
     def __init__(self, send_port, recv_port, link_table, router_routing_table=None):
-        self.routingTable = router_routing_table
+        self.routingTable = {}
         self.link_table = link_table
         self.send_port = send_port
         self.recv_port = recv_port
@@ -49,7 +49,9 @@ class RouterDV(Router):
         for rt in self.link_table.keys():
             # 逆转毒性处理
             de_possion = self.routingTable
-            de_possion[rt] = 9999
+            for itm in de_possion.values():
+                if itm[1] == rt:
+                    itm[0] = 9999
             # 发送本机路由表
             print('Sending to ' + rt + '...')
             self.network_obj.request(rt, self.recv_port, 0, 0, json.dumps(de_possion))
@@ -61,10 +63,11 @@ class RouterDV(Router):
         elif msg[0] == Method_Route_Msg:
             self.recv_routing_msg(msg)
         elif msg[0] == Method_Request_Route:
-            if not self.link_table[msg[1][0]]:
-                self.link_table[msg[1]][0] = 1
-                if msg[1] in self.routingTable.keys() and self.link_table[msg[1]][1] <= self.routingTable[msg[1]][0]
-                    self.routingTable[msg[1]] = [self.link_table[msg[1]][1], msg[1]]
+            self.link_table[msg[1]][0] = 1
+            if msg[1] in self.routingTable.keys() and self.link_table[msg[1]][1] <= self.routingTable[msg[1]][0]:
+                self.routingTable[msg[1]] = [self.link_table[msg[1]][1], msg[1]]
+            elif msg[1] not in self.routingTable.keys():
+                self.routingTable[msg[1]] = [self.link_table[msg[1]][1], msg[1]]
             self.send_routing_msg()
         return
 
