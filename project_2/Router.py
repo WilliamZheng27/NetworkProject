@@ -49,8 +49,8 @@ class RouterDV(Router):
         for rt in self.link_table.keys():
             # 逆转毒性处理
             de_possion = self.routingTable
-            for itm in de_possion.values():
-                if itm[1] == rt:
+            for key,itm in de_possion.items():
+                if itm[1] == rt and key != itm[1]:
                     itm[0] = 9999
             # 发送本机路由表
             print('Sending to ' + rt + '...')
