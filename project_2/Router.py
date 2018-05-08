@@ -61,7 +61,7 @@ class RouterDV(Router):
         for rt in self.link_table.keys():
             if self.link_table[rt][0]:
                 # 逆转毒性处理
-                de_possion = self.routingTable
+                de_possion = self.routingTable[:]
                 for key,itm in de_possion.items():
                     if itm[1] == rt and key != itm[1]:
                         itm[0] = 9999
