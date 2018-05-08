@@ -16,6 +16,7 @@ class Network:
         self.target_ip = ''
         self.target_port = 0
         self.sock_recv = socket.socket()
+        self.sock_connect = None
         self.recv_status = 0
 
     def get_host_ip(self):
@@ -74,23 +75,23 @@ class Network:
 
     def __requestHandler(self,call_back_handler):
         data = b''
-        data += self.recieve(self.sock_recv,request_len)
+        data += self.recieve(self.sock_connect,request_len)
         data = data.decode()
         data = data.split('\r\n')
         ret = data
         keep_alive = int(data[5])
         body_len = int(data[6])
         data = b''
-        data += self.recieve(self.sock_recv, body_len)
+        data += self.recieve(self.sock_connect, body_len)
         body = data.decode()
         ret += body
         call_back_handler(ret)
         if not keep_alive:
-            self.sock_recv.close()
+            self.sock_connect.close()
 
     def __thread_accept(self,call_back_request_handler):
         while True:
-            source_ip,source_port = self.sock_recv.accept()
+            self.sock_connect, = self.sock_recv.accept()
             t = threading.Thread(target=self.__requestHandler,args=[call_back_request_handler])
             t.start()
 
