@@ -39,7 +39,8 @@ class RouterDV(Router):
                     self.network_obj.connect(rt, self.recv_port)
                     self.network_obj.sock_send.settimeout(None)
                     self.routingTable[rt] = [link_table[rt][1], rt]
-                    self.recv_routing_msg(json.loads(self.network_obj.request(rt, self.recv_port, 2, 1))[7])
+                    tmp_list = self.network_obj.request(rt, self.recv_port, 2, 1)
+                    self.recv_routing_msg(json.loads(tmp_list))
                 except socket.error:
                     link_table[rt][0] = 0
                     continue
@@ -57,7 +58,6 @@ class RouterDV(Router):
                 # 发送本机路由表
                 print('Sending to ' + rt + '...')
                 self.network_obj.response(rt, self.send_port, 0, 0, json.dumps(de_possion))
-            return
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Data_Pack:
@@ -75,8 +75,7 @@ class RouterDV(Router):
 
     # 接受其它路由的路由信息
     def recv_routing_msg(self, msg):
-        print('Recieving route messages from ' + msg[1] + '...')
-        dist = self.routingTable.get(msg[1])
+        dist = self.link_table[msg[1]]
         neibor_dict = json.loads(msg[7])
         print('Recieving routing messages from ' + msg[1] + ' ...')
         flag = 0
@@ -88,6 +87,7 @@ class RouterDV(Router):
         if flag:
             self.send_routing_msg()
         return
+
 
 
 # TODO:LS算法、有中心服务器路由

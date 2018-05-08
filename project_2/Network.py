@@ -1,7 +1,8 @@
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
 import socket
 import threading
+
 max_listen_num = 5
 request_len = 57
 
@@ -29,10 +30,10 @@ class Network:
             s.close()
         return ip
 
-    def connect(self,target_ip,target_port):
+    def connect(self, target_ip, target_port):
         if self.send_status:
             raise Exception('Already connected')
-        self.sock_send.connect((target_ip,target_port))
+        self.sock_send.connect((target_ip, target_port))
         self.target_ip = target_ip
         self.send_status = 1
 
@@ -47,7 +48,7 @@ class Network:
             raise Exception('Already listening')
         self.sock_recv.bind((self.source_ip, self.recv_port))
         self.sock_recv.listen(max_listen_num)
-        t = threading.Thread(target=self.__thread_accept,args=[call_back_request_handler])
+        t = threading.Thread(target=self.__thread_accept, args=[call_back_request_handler])
         t.start()
         self.recv_status = 1
 
@@ -59,29 +60,29 @@ class Network:
 
     def request(self, target_ip, target_port, method, keep_alive, data=''):
         if not self.send_status:
-            self.connect(target_ip,target_port)
+            self.connect(target_ip, target_port)
             self.send_status = 1
-        pkg = self.__pack_request(method,target_ip,target_port,len(data),keep_alive,data)
+        pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
         self.__send(self.sock_send, pkg)
         respose = b''
-        respose += self.recieve(self.sock_send,request_len)
+        respose += self.recieve(self.sock_send, request_len)
         respose = self.__unpack_request(respose)
         body_len = int(respose[6])
-        body_buff = self.recieve(self.sock_send,body_len)
+        body_buff = self.recieve(self.sock_send, body_len)
         body_buff = body_buff.decode()
-        respose += body_buff
+        respose[7] = body_buff
         if not keep_alive:
             self.sock_send.close()
         return respose
 
     def response(self, target_ip, target_port, method, keep_alive, data=''):
-        pkg = self.__pack_request(method,target_ip,target_port,len(data),keep_alive,data)
+        pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
         self.__send(self.sock_connect[target_ip], pkg)
 
     def __requestHandler(self, ip, call_back_handler):
         while True:
             data = b''
-            data += self.recieve(self.sock_connect[ip],request_len)
+            data += self.recieve(self.sock_connect[ip], request_len)
             data = data.decode()
             data = data.split('\r\n')
             ret = data
@@ -90,21 +91,21 @@ class Network:
             data = b''
             data += self.recieve(self.sock_connect[ip], body_len)
             body = data.decode()
-            ret += body
+            ret[7] = body
             call_back_handler(ret)
             if not keep_alive:
                 self.sock_connect[ip].close()
                 del self.sock_connect[ip]
                 break
 
-    def __thread_accept(self,call_back_request_handler):
+    def __thread_accept(self, call_back_request_handler):
         while True:
             tmp_obj, ipadrs = self.sock_recv.accept()
             self.sock_connect[ipadrs[0]] = tmp_obj
-            t = threading.Thread(target=self.__requestHandler,args=[ipadrs[0], call_back_request_handler])
+            t = threading.Thread(target=self.__requestHandler, args=[ipadrs[0], call_back_request_handler])
             t.start()
 
-    def __pack_request(self,method,target_ip,target_port,body_len,keep_alive,body):
+    def __pack_request(self, method, target_ip, target_port, body_len, keep_alive, body):
         respose = ''
         respose += str(method)
         respose += '\r\n'
@@ -125,13 +126,12 @@ class Network:
         print(len(respose))
         return respose
 
-    def __unpack_request(self,buffer):
+    def __unpack_request(self, buffer):
         butter = buffer.decode()
         butter = butter.split('\r\n')
         return butter
 
-
-    def __pack_respond(self,status_code,target_ip,target_port,body_len,body):
+    def __pack_respond(self, status_code, target_ip, target_port, body_len, body):
         respose = ''
         respose += str(status_code)
         respose += '\r\n'
@@ -150,19 +150,11 @@ class Network:
         respose = respose.encode()
         return respose
 
-    def __send(self,sock,data):
+    def __send(self, sock, data):
         sock.send(data)
 
-    def recieve(self,sock,data_size):
+    def recieve(self, sock, data_size):
         buffer = b''
         while len(buffer) < data_size:
-            buffer += sock.recv(1024)
+            buffer += sock.recv(data_size + 1)
         return buffer
-
-
-
-
-
-
-
-
