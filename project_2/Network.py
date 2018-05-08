@@ -125,7 +125,7 @@ class Network:
 
     def __unpack_request(self,buffer):
         butter = buffer.decode()
-        butter = butter.spilt('\r\n')
+        butter = butter.split('\r\n')
         return butter
 
 
