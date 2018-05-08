@@ -73,7 +73,7 @@ class RouterDV(Router):
         if msg[0] == Method_Data_Pack:
             self.routing(msg)
         elif msg[0] == Method_Route_Msg:
-            self.network_obj.response(msg[1], self.send_port, 200, 0)
+            self.network_obj.response(msg[1], self.send_port, 5, 0)
             self.recv_routing_msg(msg)
         elif msg[0] == Method_Request_Route:
             self.link_table[msg[1]][0] = 1
