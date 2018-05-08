@@ -91,7 +91,7 @@ class Network:
 
     def __thread_accept(self,call_back_request_handler):
         while True:
-            self.sock_connect, = self.sock_recv.accept()
+            self.sock_connect, ipadrs = self.sock_recv.accept()
             t = threading.Thread(target=self.__requestHandler,args=[call_back_request_handler])
             t.start()
 
