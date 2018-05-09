@@ -51,7 +51,7 @@ class RouterDV(Router):
         print("Sending routing messages...")
         if type:
             # 逆转毒性处理
-            de_possion = self.routingTable
+            de_possion = copy.deepcopy(self.routingTable)
             for key, itm in de_possion.items():
                 if itm[1] == request_ip and key != itm[1]:
                     itm[0] = 9999
