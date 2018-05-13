@@ -143,7 +143,8 @@ class RouterLS(Router):
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Route_Msg:
-            del self.routingTable
+            for key in self.routingTable.keys():
+                del self.routingTable[key]
             if msg[6] != '0':
                 self.create_routing_table(msg)
             print(self.routingTable)
