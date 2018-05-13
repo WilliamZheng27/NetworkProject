@@ -24,6 +24,7 @@ class Router:
     def routing(self):
         self.network_obj.LS_start_listen_pkg()
 
+
 class CenterServer():
     def __init__(self, send_port, recv_port):
         '''
@@ -119,7 +120,7 @@ class CenterServer():
             data = json.dumps(self.global_routing_table[router_ip])
             self.network_obj.seng_data(router_ip, self.recv_port, 0, 0, data)
 
-    #检测路由器是否在线
+    # 检测路由器是否在线
     def test_router(self):
         routers = []
         for key in self.global_topo.keys():
@@ -134,12 +135,41 @@ class RouterLS(Router):
     '''
     routingTable: 路由表为字典结构，key=目的路由IP，value=下一条路由IP
     '''
+
     def __init__(self, send_port, recv_port, center_server_ip, link_table):
         Router.__init__(self, send_port, recv_port, link_table)
         self.center_server_ip = center_server_ip
         self.send_link_table()
         print('Router online')
         self.recv_routing_table()
+        time.sleep(10)
+        while self.network_obj.thread_number != 0:
+            time.sleep(5)
+        self.client()
+
+    # TODO: 实现客户端（封装在Router中的函数）,未考虑路由表变更的情况
+    def client(self):
+        print('可到达的IP有', end=' ')
+        for ip in self.routingTable.keys():
+            print(ip, end=' or ')
+        print('send指令格式为: send-(内容)-(目的IP)')
+        while True:
+            user_input = input('Command: ')
+            if user_input.lower() == 'exit':
+                self.router_exit()
+                break
+            else:
+                Input = user_input.split('-')
+                if Input[0].lower() == 'send':
+                    data = Input[1]
+                    dest_ip = Input[2]
+                    if dest_ip in self.routingTable.keys():
+                        self.network_obj.send_pkg(self.routingTable[dest_ip], self.network_obj.pkg_recv_port, 1, 0,
+                                                  dest_ip, data)
+                    else:
+                        print('错误的目的IP地址:', dest_ip)
+                else:
+                    print('错误的指令:', user_input)
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Route_Msg:
@@ -150,7 +180,7 @@ class RouterLS(Router):
                 del self.routingTable[item]
             if msg[6] != '0':
                 self.create_routing_table(msg)
-            print(self.routingTable)
+            print('路由表', self.routingTable)
 
     # 生成路由表
     def create_routing_table(self, msg):
@@ -169,7 +199,6 @@ class RouterLS(Router):
         data = json.dumps(data)
         self.network_obj.seng_data(self.center_server_ip, self.recv_port, 3, 0, data)
 
-    #TODO: 向CenterServer发送退出信息
     def router_exit(self):
         self.network_obj.seng_data(self.center_server_ip, self.recv_port, 4, 0, '')
         print('Router offline')

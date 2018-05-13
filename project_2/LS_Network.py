@@ -13,6 +13,7 @@ class Network:
     def __init__(self, network_send_port, network_recv_port):
         self.send_port = network_send_port
         self.recv_port = network_recv_port
+        self.pkg_recv_port = 22333
         self.source_ip = self.get_host_ip()
         self.sock_send = socket.socket()
         self.target_ip = ''
@@ -146,7 +147,7 @@ class Network:
         return respose
 
     def LS_start_listen_pkg(self):
-        self.sock_recv.bind((self.source_ip, self.recv_port))
+        self.sock_recv.bind((self.source_ip, self.pkg_recv_port))
         self.sock_recv.listen(max_listen_num)
         t = threading.Thread(target=self.LS__thread_accept_pkg)
         t.start()
@@ -175,7 +176,7 @@ class Network:
             # TODO:发往客户端
             pass
         else:
-            self.send_pkg(next_jmp, self.recv_port, 1, 0, final_dest_ip, json.dumps(body))
+            self.send_pkg(next_jmp, self.pkg_recv_port, 1, 0, final_dest_ip, json.dumps(body))
         if not keep_alive:
             self.sock_connect[ip].close()
             del self.sock_connect[ip]
