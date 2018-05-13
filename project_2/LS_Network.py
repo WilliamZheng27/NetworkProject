@@ -68,10 +68,11 @@ class Network:
         ret = data
         keep_alive = int(data[5])
         body_len = int(data[6])
-        data = b''
-        data += self.LS_recieve(self.sock_connect[ip], body_len)
-        body = json.loads(data.decode())
-        ret[7] = body
+        if body_len != 0:
+            data = b''
+            data += self.LS_recieve(self.sock_connect[ip], body_len)
+            body = json.loads(data.decode())
+            ret[7] = body
         call_back_handler(ret)
         if not keep_alive:
             self.sock_connect[ip].close()

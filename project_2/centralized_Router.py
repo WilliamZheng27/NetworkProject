@@ -96,6 +96,7 @@ class CenterServer():
             self.create_global_topo(msg)
         elif msg[0] == Method_Exit_Msg:
             del self.global_topo[msg[1]]
+            del self.global_routing_table[msg[1]]
             print(msg[1], 'offline')
             self.test_router()
             self.LS()
@@ -137,15 +138,15 @@ class RouterLS(Router):
         Router.__init__(self, send_port, recv_port, link_table)
         self.center_server_ip = center_server_ip
         self.send_link_table()
+        print('Router online')
         self.recv_routing_table()
-        time.sleep(10)
-        while self.network_obj.thread_number != 0:
-            time.sleep(5)
-        print(self.routingTable)
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Route_Msg:
-            self.create_routing_table(msg)
+            del self.routingTable
+            if msg[6] != '0':
+                self.create_routing_table(msg)
+            print(self.routingTable)
 
     # 生成路由表
     def create_routing_table(self, msg):
