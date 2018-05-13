@@ -128,8 +128,10 @@ class RouterLS(Router):
         Router.__init__(self, send_port, recv_port, link_table)
         self.center_server_ip = center_server_ip
         self.send_link_table()
-        time.sleep(1)
         self.recv_routing_table()
+        time.sleep(5)
+        while self.network_obj.thread_number != 0:
+            time.sleep(5)
         print(self.routingTable)
 
     def __msg_handler(self, msg):
