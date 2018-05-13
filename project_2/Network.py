@@ -5,7 +5,7 @@ import threading
 
 max_listen_num = 5
 request_len = 57
-
+LS_head_len = 55
 
 class Network:
     def __init__(self, network_send_port, network_recv_port):
@@ -71,14 +71,6 @@ class Network:
         if not keep_alive:
             self.sock_send.close()
         return respose
-
-    def seng_data(self, target_ip, target_port, method, keep_alive, data=''):
-        self.connect(target_ip, target_port)
-        self.send_status = 1
-        pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
-        self.__send(self.sock_send, pkg)
-        if not keep_alive:
-            self.sock_send.close()
 
     def response(self, target_ip, target_port, method, keep_alive, data=''):
         pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
@@ -163,3 +155,44 @@ class Network:
         while len(buffer) < data_size:
             buffer += sock.recv(data_size + 1)
         return buffer
+
+    def LS_start_listen(self, call_back_request_handler):
+        self.sock_recv.bind((self.source_ip, self.recv_port))
+        self.sock_recv.listen(max_listen_num)
+        t = threading.Thread(target=self.LS__thread_accept, args=[call_back_request_handler])
+        t.start()
+        self.recv_status = 1
+
+    def seng_data(self, target_ip, target_port, method, keep_alive, data=''):
+        self.connect(target_ip, target_port)
+        self.send_status = 1
+        pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
+        self.__send(self.sock_send, pkg)
+        if not keep_alive:
+            self.sock_send.close()
+
+    def LS__thread_accept(self, call_back_request_handler):
+        while True:
+            tmp_obj, ipadrs = self.sock_recv.accept()
+            self.sock_connect[ipadrs[0]] = tmp_obj
+            t = threading.Thread(target=self.LS__requestHandler, args=[ipadrs[0], call_back_request_handler])
+            t.start()
+
+    def LS__requestHandler(self, ip, call_back_handler):
+        while True:
+            data = b''
+            data += self.recieve(self.sock_connect[ip], LS_head_len)
+            data = data.decode()
+            data = data.split('\r\n')
+            ret = data
+            keep_alive = int(data[5])
+            body_len = int(data[6])
+            data = b''
+            data += self.recieve(self.sock_connect[ip], body_len)
+            body = data.decode()
+            ret[7] = body
+            call_back_handler(ret)
+            if not keep_alive:
+                self.sock_connect[ip].close()
+                del self.sock_connect[ip]
+                break

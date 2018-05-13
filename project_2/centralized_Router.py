@@ -106,8 +106,7 @@ class CenterServer():
 
     # 接收各个路由器的link_table
     def listen_router_link_table(self):
-        self.network_obj.start_listen(self.__msg_handler)
-
+        self.network_obj.LS_start_listen(self.__msg_handler)
 
     # 将生成的全局路由表发往各个路由器
     def send_routing_table(self):
