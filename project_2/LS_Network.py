@@ -5,7 +5,7 @@ import threading
 import json
 
 max_listen_num = 5
-LS_head_len = 58
+LS_head_len = 59
 
 class Network:
     def __init__(self, network_send_port, network_recv_port):
@@ -106,8 +106,11 @@ class Network:
         respose += '\r\n'
         respose += str(keep_alive)
         respose += '\r\n'
+        if body_len < 100:
+            respose += str(0)
         respose += str(body_len)
         respose += '\r\n'
+        print(len(respose.encode()))
         respose += body
         respose = respose.encode()
         return respose
@@ -117,3 +120,4 @@ class Network:
         while len(buffer) < data_size:
             buffer += sock.recv(data_size)
         return buffer
+
