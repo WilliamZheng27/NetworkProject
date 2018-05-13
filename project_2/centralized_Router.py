@@ -20,15 +20,7 @@ class Router:
         self.recv_port = recv_port
         self.network_obj = LS_Network.Network(send_port, recv_port)
 
-    # 转发数据包
-    def routing(self, pkg):
-        dest_ip = pkg.decode().split('\r\n')[3]
-        dest_port = int(pkg.decode().split('\r\n')[4])
-        next_jmp = self.routingTable.get(dest_ip)
-        if next_jmp is None:
-            raise Exception('Unknown Destination')
-        self.network_obj.request(next_jmp, dest_port, 1, 0, pkg)
-        return
+    # TODO: 转发数据包
 
 
 # TODO:中心服务器
@@ -105,7 +97,6 @@ class CenterServer():
 
     # 生成全局拓扑图global_topo
     def create_global_topo(self, msg):
-        msg[7] = json.loads(msg[7])
         self.global_topo[msg[1]] = msg[7]
 
     # 接收各个路由器的link_table
@@ -152,7 +143,7 @@ class RouterLS(Router):
 
     # 接收来自CenterServer的路由表
     def recv_routing_table(self):
-        self.network_obj.start_listen(self.__msg_handler)
+        self.network_obj.LS_start_listen(self.__msg_handler)
 
     # 向CenterServer发送link_table
     def send_link_table(self):

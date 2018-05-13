@@ -2,10 +2,10 @@
 
 import socket
 import threading
+import json
 
 max_listen_num = 5
-request_len = 57
-LS_head_len = 55
+LS_head_len = 58
 
 class Network:
     def __init__(self, network_send_port, network_recv_port):
@@ -42,120 +42,14 @@ class Network:
             raise Exception('Not connected')
         self.send_status = 0
 
-    def start_listen(self, call_back_request_handler):
-        if self.recv_status:
-            raise Exception('Already listening')
-        self.sock_recv.bind((self.source_ip, self.recv_port))
-        self.sock_recv.listen(max_listen_num)
-        t = threading.Thread(target=self.__thread_accept, args=[call_back_request_handler])
-        t.start()
-        self.recv_status = 1
-
     def stop_listen(self):
         if not self.recv_status:
             raise Exception('Not listening')
         self.sock_recv.close()
         self.recv_status = 0
 
-    def request(self, target_ip, target_port, method, keep_alive, data=''):
-        self.connect(target_ip, target_port)
-        self.send_status = 1
-        pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
-        self.__send(self.sock_send, pkg)
-        respose = b''
-        respose += self.recieve(self.sock_send, request_len)
-        respose = self.__unpack_request(respose)
-        body_len = int(respose[6])
-        body_buff = self.recieve(self.sock_send, body_len)
-        body_buff = body_buff.decode()
-        respose[7] = body_buff
-        if not keep_alive:
-            self.sock_send.close()
-        return respose
-
-    def response(self, target_ip, target_port, method, keep_alive, data=''):
-        pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
-        self.__send(self.sock_connect[target_ip], pkg)
-
-    def __requestHandler(self, ip, call_back_handler):
-        while True:
-            data = b''
-            data += self.recieve(self.sock_connect[ip], request_len)
-            data = data.decode()
-            data = data.split('\r\n')
-            ret = data
-            keep_alive = int(data[5])
-            body_len = int(data[6])
-            data = b''
-            data += self.recieve(self.sock_connect[ip], body_len)
-            body = data.decode()
-            ret[7] = body
-            call_back_handler(ret)
-            if not keep_alive:
-                self.sock_connect[ip].close()
-                del self.sock_connect[ip]
-                break
-
-    def __thread_accept(self, call_back_request_handler):
-        while True:
-            tmp_obj, ipadrs = self.sock_recv.accept()
-            self.sock_connect[ipadrs[0]] = tmp_obj
-            t = threading.Thread(target=self.__requestHandler, args=[ipadrs[0], call_back_request_handler])
-            t.start()
-
-    def __pack_request(self, method, target_ip, target_port, body_len, keep_alive, body):
-        respose = ''
-        respose += str(method)
-        respose += '\r\n'
-        respose += self.source_ip
-        respose += '\r\n'
-        respose += str(self.send_port)
-        respose += '\r\n'
-        respose += target_ip
-        respose += '\r\n'
-        respose += str(target_port)
-        respose += '\r\n'
-        respose += str(keep_alive)
-        respose += '\r\n'
-        respose += str(body_len)
-        respose += '\r\n'
-        print(len(respose))
-        respose += body
-        respose = respose.encode()
-        return respose
-
-    def __unpack_request(self, buffer):
-        butter = buffer.decode()
-        butter = butter.split('\r\n')
-        return butter
-
-    def __pack_respond(self, status_code, target_ip, target_port, body_len, body):
-        respose = ''
-        respose += str(status_code)
-        respose += '\r\n'
-        respose += self.source_ip
-        respose += '\r\n'
-        respose += str(self.send_port)
-        respose += '\r\n'
-        respose += target_ip
-        respose += '\r\n'
-        respose += str(target_port)
-        respose += '\r\n'
-        respose += str(body_len)
-        respose += '\r\n'
-        respose += body
-        respose += '\r\n'
-        respose = respose.encode()
-        return respose
-
     def __send(self, sock, data):
         sock.send(data)
-
-    def recieve(self, sock, data_size):
-        buffer = b''
-        while len(buffer) < data_size:
-            buffer += sock.recv(data_size + 1)
-        return buffer
 
     def LS_start_listen(self, call_back_request_handler):
         self.sock_recv.bind((self.source_ip, self.recv_port))
@@ -167,7 +61,7 @@ class Network:
     def seng_data(self, target_ip, target_port, method, keep_alive, data=''):
         self.connect(target_ip, target_port)
         self.send_status = 1
-        pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
+        pkg = self.LS__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
         self.__send(self.sock_send, pkg)
         if not keep_alive:
             self.sock_send.close()
@@ -189,14 +83,34 @@ class Network:
         keep_alive = int(data[5])
         body_len = int(data[6])
         data = b''
-        data += self.recieve(self.sock_connect[ip], body_len)
-        body = data.decode()
+        data += self.LS_recieve(self.sock_connect[ip], body_len)
+        body = json.loads(data.decode())
         ret[7] = body
         call_back_handler(ret)
         if not keep_alive:
             self.sock_connect[ip].close()
             del self.sock_connect[ip]
         self.thread_number -= 1
+
+    def LS__pack_request(self, method, target_ip, target_port, body_len, keep_alive, body):
+        respose = ''
+        respose += str(method)
+        respose += '\r\n'
+        respose += self.source_ip
+        respose += '\r\n'
+        respose += str(self.send_port)
+        respose += '\r\n'
+        respose += target_ip
+        respose += '\r\n'
+        respose += str(target_port)
+        respose += '\r\n'
+        respose += str(keep_alive)
+        respose += '\r\n'
+        respose += str(body_len)
+        respose += '\r\n'
+        respose += body
+        respose = respose.encode()
+        return respose
 
     def LS_recieve(self, sock, data_size):
         buffer = b''
