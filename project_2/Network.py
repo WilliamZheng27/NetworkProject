@@ -72,6 +72,14 @@ class Network:
             self.sock_send.close()
         return respose
 
+    def seng_data(self, target_ip, target_port, method, keep_alive, data=''):
+        self.connect(target_ip, target_port)
+        self.send_status = 1
+        pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
+        self.__send(self.sock_send, pkg)
+        if not keep_alive:
+            self.sock_send.close()
+
     def response(self, target_ip, target_port, method, keep_alive, data=''):
         pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
         self.__send(self.sock_connect[target_ip], pkg)
