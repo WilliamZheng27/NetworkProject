@@ -47,6 +47,7 @@ class CenterServer():
         self.global_routing_table = {}
         self.listen_router_link_table()
         time.sleep(10)
+        self.test_router()
         self.LS()
         self.send_routing_table()
         for key, value in self.global_routing_table.items():
@@ -115,7 +116,14 @@ class CenterServer():
             self.network_obj.seng_data(router_ip, self.recv_port, 0, 0, data)
 
     # TODO: 周期检测路由器是否在线，若有路由器offline则重新生成全局路由表
-
+    def test_router(self):
+        routers = []
+        for key in self.global_topo.keys():
+            routers.append(key)
+        for key in self.global_topo.keys():
+            for value in self.global_topo[key]:
+                if value[1] not in routers:
+                    self.global_topo[key].remove([value[0], value[1]])
 
 # TODO: 中心化路由器
 class RouterLS(Router):
@@ -126,8 +134,8 @@ class RouterLS(Router):
         Router.__init__(self, send_port, recv_port, link_table)
         self.center_server_ip = center_server_ip
         self.send_link_table()
+        time.sleep(1)
         self.recv_routing_table()
-        time.sleep(5)
         print(self.routingTable)
 
     def __msg_handler(self, msg):

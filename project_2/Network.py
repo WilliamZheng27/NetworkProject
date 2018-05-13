@@ -179,20 +179,24 @@ class Network:
             t.start()
 
     def LS__requestHandler(self, ip, call_back_handler):
-        while True:
-            data = b''
-            data += self.recieve(self.sock_connect[ip], LS_head_len)
-            data = data.decode()
-            data = data.split('\r\n')
-            ret = data
-            keep_alive = int(data[5])
-            body_len = int(data[6])
-            data = b''
-            data += self.recieve(self.sock_connect[ip], body_len)
-            body = data.decode()
-            ret[7] = body
-            call_back_handler(ret)
-            if not keep_alive:
-                self.sock_connect[ip].close()
-                del self.sock_connect[ip]
-                break
+        data = b''
+        data += self.LS_recieve(self.sock_connect[ip], LS_head_len)
+        data = data.decode()
+        data = data.split('\r\n')
+        ret = data
+        keep_alive = int(data[5])
+        body_len = int(data[6])
+        data = b''
+        data += self.recieve(self.sock_connect[ip], body_len)
+        body = data.decode()
+        ret[7] = body
+        call_back_handler(ret)
+        if not keep_alive:
+            self.sock_connect[ip].close()
+            del self.sock_connect[ip]
+
+    def LS_recieve(self, sock, data_size):
+        buffer = b''
+        while len(buffer) < data_size:
+            buffer += sock.recv(data_size)
+        return buffer
