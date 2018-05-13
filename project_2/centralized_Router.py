@@ -3,6 +3,7 @@ import Network
 import socket
 import json
 import copy
+import time
 
 Method_Route_Msg = '0'
 Method_Data_Pack = '1'
@@ -44,6 +45,10 @@ class CenterServer():
         self.network_obj = Network.Network(send_port, recv_port)
         self.global_topo = {}
         self.global_routing_table = {}
+        self.listen_router_link_table()
+        time.sleep(10)
+        self.LS()
+        self.send_routing_table()
 
     def Dijkstra(self, source_ip, dest_ip):
         length = {}
@@ -121,6 +126,10 @@ class RouterLS(Router):
     def __init__(self, send_port, recv_port, center_server_ip, link_table):
         Router.__init__(self, send_port, recv_port, link_table)
         self.center_server_ip = center_server_ip
+        self.send_link_table()
+        self.recv_routing_table()
+        time.sleep(5)
+        print(self.routingTable)
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Route_Msg:
