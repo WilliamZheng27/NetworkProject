@@ -23,7 +23,6 @@ class Router:
     # TODO: 转发数据包
 
 
-# TODO:中心服务器
 class CenterServer():
     def __init__(self, send_port, recv_port):
         '''
@@ -38,7 +37,7 @@ class CenterServer():
         self.global_topo = {}
         self.global_routing_table = {}
         self.listen_router_link_table()
-        time.sleep(20)
+        time.sleep(10)
         while self.network_obj.thread_number != 0:
             time.sleep(5)
         self.test_router()
@@ -109,7 +108,6 @@ class CenterServer():
             data = json.dumps(self.global_routing_table[router_ip])
             self.network_obj.seng_data(router_ip, self.recv_port, 0, 0, data)
 
-    # TODO: 周期检测路由器是否在线，若有路由器offline则重新生成全局路由表
     def test_router(self):
         routers = []
         for key in self.global_topo.keys():
@@ -119,7 +117,7 @@ class CenterServer():
                 if value[1] not in routers:
                     self.global_topo[key].remove([value[0], value[1]])
 
-# TODO: 中心化路由器
+
 class RouterLS(Router):
     '''
     routingTable: 路由表为字典结构，key=目的路由IP，value=下一条路由IP
