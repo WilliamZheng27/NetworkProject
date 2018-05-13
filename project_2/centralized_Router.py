@@ -46,7 +46,9 @@ class CenterServer():
         self.global_topo = {}
         self.global_routing_table = {}
         self.listen_router_link_table()
-        time.sleep(10)
+        time.sleep(5)
+        while self.network_obj.thread_number != 0:
+            time.sleep(5)
         self.test_router()
         self.LS()
         self.send_routing_table()
@@ -103,6 +105,7 @@ class CenterServer():
 
     # 生成全局拓扑图global_topo
     def create_global_topo(self, msg):
+        msg[7] = json.loads(msg[7])
         self.global_topo[msg[1]] = msg[7]
 
     # 接收各个路由器的link_table
