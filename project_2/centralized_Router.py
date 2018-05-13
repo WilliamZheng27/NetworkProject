@@ -38,7 +38,7 @@ class CenterServer():
         self.global_topo = {}
         self.global_routing_table = {}
         self.listen_router_link_table()
-        time.sleep(5)
+        time.sleep(10)
         while self.network_obj.thread_number != 0:
             time.sleep(5)
         self.test_router()
@@ -129,10 +129,9 @@ class RouterLS(Router):
         self.center_server_ip = center_server_ip
         self.send_link_table()
         self.recv_routing_table()
-        time.sleep(5)
+        time.sleep(10)
         while self.network_obj.thread_number != 0:
             time.sleep(5)
-        print(self.routingTable)
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Route_Msg:
