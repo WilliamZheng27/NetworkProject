@@ -21,7 +21,8 @@ class Router:
         self.network_obj = LS_Network.Network(send_port, recv_port)
 
     # TODO: 转发数据包
-
+    def routing(self):
+        self.network_obj.LS_start_listen_pkg()
 
 class CenterServer():
     def __init__(self, send_port, recv_port):
@@ -93,9 +94,18 @@ class CenterServer():
     def __msg_handler(self, msg):
         if msg[0] == Method_Topo_Msg:
             self.create_global_topo(msg)
+        elif msg[0] == Method_Exit_Msg:
+            del self.global_topo[msg[1]]
+            print(msg[1], 'offline')
+            self.test_router()
+            self.LS()
+            self.send_routing_table()
+            for key, value in self.global_routing_table.items():
+                print(key, '路由：', value)
 
     # 生成全局拓扑图global_topo
     def create_global_topo(self, msg):
+        print(msg[1], 'online')
         self.global_topo[msg[1]] = msg[7]
 
     # 接收各个路由器的link_table
@@ -108,6 +118,7 @@ class CenterServer():
             data = json.dumps(self.global_routing_table[router_ip])
             self.network_obj.seng_data(router_ip, self.recv_port, 0, 0, data)
 
+    #检测路由器是否在线
     def test_router(self):
         routers = []
         for key in self.global_topo.keys():
@@ -130,6 +141,7 @@ class RouterLS(Router):
         time.sleep(10)
         while self.network_obj.thread_number != 0:
             time.sleep(5)
+        print(self.routingTable)
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Route_Msg:
@@ -151,3 +163,8 @@ class RouterLS(Router):
             data.append([self.link_table[key][1], key])
         data = json.dumps(data)
         self.network_obj.seng_data(self.center_server_ip, self.recv_port, 3, 0, data)
+
+    #TODO: 向CenterServer发送退出信息
+    def router_exit(self):
+        self.network_obj.seng_data(self.center_server_ip, self.recv_port, 4, 0, '')
+        print('Router offline')
