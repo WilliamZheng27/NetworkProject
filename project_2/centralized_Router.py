@@ -49,6 +49,8 @@ class CenterServer():
         time.sleep(10)
         self.LS()
         self.send_routing_table()
+        for key, value in self.global_routing_table.items():
+            print(key, '路由：', value)
 
     def Dijkstra(self, source_ip, dest_ip):
         length = {}
@@ -114,8 +116,6 @@ class CenterServer():
             self.network_obj.seng_data(router_ip, self.recv_port, 0, 0, data)
 
     # TODO: 周期检测路由器是否在线，若有路由器offline则重新生成全局路由表
-    def test_router(self):
-        pass
 
 
 # TODO: 中心化路由器
@@ -151,22 +151,3 @@ class RouterLS(Router):
             data.append([self.link_table[key][1], key])
         data = json.dumps(data)
         self.network_obj.seng_data(self.center_server_ip, self.recv_port, 3, 0, data)
-
-
-if __name__ == "__main__":
-    '''
-    测试LS算法
-    '''
-    center = CenterServer(111, 111)
-    global_topo = {
-        'a': [[6, 'b'], [3, 'c']],
-        'b': [[6, 'a'], [2, 'c'], [5, 'd']],
-        'c': [[3, 'a'], [2, 'b'], [3, 'd'], [4, 'e']],
-        'd': [[5, 'b'], [3, 'c'], [2, 'e'], [3, 'f']],
-        'e': [[4, 'c'], [2, 'd'], [5, 'f']],
-        'f': [[3, 'd'], [5, 'e']]
-    }
-    center.global_topo = global_topo
-    center.LS()
-    for key, value in center.global_routing_table.items():
-        print(key, '路由器:', value)

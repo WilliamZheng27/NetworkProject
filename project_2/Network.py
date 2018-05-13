@@ -126,9 +126,9 @@ class Network:
         respose += '\r\n'
         respose += str(body_len)
         respose += '\r\n'
+        print(len(respose))
         respose += body
         respose = respose.encode()
-        print(len(respose))
         return respose
 
     def __unpack_request(self, buffer):
