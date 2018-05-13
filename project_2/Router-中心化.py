@@ -34,13 +34,14 @@ class Router:
 class CenterServer():
     def __init__(self, send_port, recv_port):
         '''
-        global_topo: 字典结构，全局拓扑图，key=路由器IP，value=列表结构，元素为[链路距离, 邻接路由IP]
+        global_topo: 字典结构，全局拓扑图，key=路由器IP，value=列表结构，元素为列表结构[链路距离, 邻接路由IP]
 
         global_routing_table: 字典结构，全局路由表（每个路由器的路由表）
-        其中：key=路由器IP，value=列表结构, 元素为路由表项，字典结构{key=目的IP，value=下一跳路由IP}
+        其中：key=路由器IP，value=列表结构, 元素为路由表项，列表结构[key=目的IP，value=下一跳路由IP]
         '''
         self.send_port = send_port
         self.recv_port = recv_port
+        self.network_obj = Network.Network(send_port, recv_port)
         self.global_topo = {}
         self.global_routing_table = {}
 
@@ -73,16 +74,14 @@ class CenterServer():
             e = pathto[e]
         for i in range(0, len(stack)):
             if i == 0:
-                if {dest_ip: dest_ip} not in self.global_routing_table[stack[i]]:
-                    self.global_routing_table[stack[i]].append({dest_ip: dest_ip})
+                if [dest_ip, dest_ip] not in self.global_routing_table[stack[i]]:
+                    self.global_routing_table[stack[i]].append([dest_ip, dest_ip])
             else:
-                if {dest_ip: stack[i - 1]} not in self.global_routing_table[stack[i]]:
-                    self.global_routing_table[stack[i]].append({dest_ip: stack[i - 1]})
+                if [dest_ip, stack[i - 1]] not in self.global_routing_table[stack[i]]:
+                    self.global_routing_table[stack[i]].append([dest_ip, stack[i - 1]])
 
+    # 根据全局拓扑图global_topo生成全局路由表
     def LS(self):
-        '''
-        根据全局拓扑图 global_topo生成全局路由表
-        '''
         for ip in self.global_topo.keys():
             self.global_routing_table[ip] = []
         for source_ip in self.global_topo.keys():
@@ -90,23 +89,59 @@ class CenterServer():
                 if source_ip != dest_ip:
                     self.Dijkstra(source_ip, dest_ip)
 
-    # TODO: 接收各个路由器的link_table生成全局拓扑图global_topo
+    def __msg_handler(self, msg):
+        if msg[0] == Method_Topo_Msg:
+            self.create_global_topo(msg)
 
-    # TODO: 将生成的全局路由表发往各个路由器
+    # 生成全局拓扑图global_topo
+    def create_global_topo(self, msg):
+        self.global_topo[msg[1]] = msg[7]
+
+    # 接收各个路由器的link_table
+    def listen_router_link_table(self):
+        self.network_obj.start_listen(self.__msg_handler)
+
+
+    # 将生成的全局路由表发往各个路由器
+    def send_routing_table(self):
+        for router_ip in self.global_routing_table.keys():
+            data = json.dumps(self.global_routing_table[router_ip])
+            self.network_obj.seng_data(router_ip, self.recv_port, 0, 0, data)
 
     # TODO: 周期检测路由器是否在线，若有路由器offline则重新生成全局路由表
+    def test_router(self):
+        pass
 
 
 # TODO: 中心化路由器
 class RouterLS(Router):
-    def __init__(self, send_port, recv_port, link_table):
+    '''
+    routingTable: 路由表为字典结构，key=目的路由IP，value=下一条路由IP
+    '''
+    def __init__(self, send_port, recv_port, center_server_ip, link_table):
         Router.__init__(self, send_port, recv_port, link_table)
+        self.center_server_ip = center_server_ip
 
-    # TODO: 接收来自CenterServer的路由表
+    def __msg_handler(self, msg):
+        if msg[0] == Method_Route_Msg:
+            self.create_routing_table(msg)
 
-    # TODO: 向CenterServer发送link_table
+    # 生成路由表
+    def create_routing_table(self, msg):
+        for item in msg[7]:
+            self.routingTable[item[0]] = item[1]
 
-    # TODO: 接收分组并转发
+    # 接收来自CenterServer的路由表
+    def recv_routing_table(self):
+        self.network_obj.start_listen(self.__msg_handler)
+
+    # 向CenterServer发送link_table
+    def send_link_table(self):
+        data = []
+        for key in self.link_table.keys():
+            data.append([self.link_table[key][1], key])
+        data = json.dumps(data)
+        self.network_obj.seng_data(self.center_server_ip, self.recv_port, 3, 0, data)
 
 
 if __name__ == "__main__":
