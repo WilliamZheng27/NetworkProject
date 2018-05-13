@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-import Network
+import LS_Network
 import socket
 import json
 import copy
@@ -18,7 +18,7 @@ class Router:
         self.link_table = link_table
         self.send_port = send_port
         self.recv_port = recv_port
-        self.network_obj = Network.Network(send_port, recv_port)
+        self.network_obj = LS_Network.Network(send_port, recv_port)
 
     # 转发数据包
     def routing(self, pkg):
@@ -42,7 +42,7 @@ class CenterServer():
         '''
         self.send_port = send_port
         self.recv_port = recv_port
-        self.network_obj = Network.Network(send_port, recv_port)
+        self.network_obj = LS_Network.Network(send_port, recv_port)
         self.global_topo = {}
         self.global_routing_table = {}
         self.listen_router_link_table()
