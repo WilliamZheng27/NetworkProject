@@ -21,7 +21,7 @@ class Network:
         self.sock_recv = socket.socket()
         self.sock_connect = {}
         self.thread_number = 0
-        self.pkg_thread_number = 0
+        self.pkg_body = []
 
     def get_host_ip(self):
         try:
@@ -111,18 +111,19 @@ class Network:
             buffer += sock.recv(data_size)
         return buffer
 
-    def send_pkg(self, target_ip, target_port, method, keep_alive, finial_dest_ip, data=''):
+    def send_pkg(self, source_ip, target_ip, target_port, method, keep_alive, finial_dest_ip, data=''):
         self.connect(target_ip, target_port)
-        pkg = self.LS__pack_pkg(method, target_ip, target_port, len(data), keep_alive, finial_dest_ip, data='')
+        pkg = self.LS__pack_pkg(method, source_ip, target_ip, target_port, len(data), keep_alive, finial_dest_ip,
+                                data='')
         self.__send(self.sock_send, pkg)
         if not keep_alive:
             self.sock_send.close()
 
-    def LS__pack_pkg(self, method, target_ip, target_port, data_length, keep_alive, finial_dest_ip, data=''):
+    def LS__pack_pkg(self, method, source_ip, target_ip, target_port, data_length, keep_alive, finial_dest_ip, data=''):
         respose = ''
         respose += str(method)
         respose += '\r\n'
-        respose += self.source_ip
+        respose += source_ip
         respose += '\r\n'
         respose += str(self.send_port)
         respose += '\r\n'
@@ -158,13 +159,14 @@ class Network:
             self.sock_connect[ipadrs[0]] = tmp_obj
             t = threading.Thread(target=self.LS__pkgHandler, args=[ipadrs[0]])
             t.start()
-            self.pkg_thread_number += 1
 
+    # TODO: 转发数据包
     def LS__pkgHandler(self, ip):
         data = b''
         data += self.LS_recieve(self.sock_connect[ip], pkg_head_len)
         data = data.decode()
         data = data.split('\r\n')
+        source_ip = data[1]
         next_jmp = data[3]
         keep_alive = int(data[5])
         body_len = int(data[6])
@@ -173,11 +175,12 @@ class Network:
         data += self.LS_recieve(self.sock_connect[ip], body_len)
         body = json.loads(data.decode())
         if final_dest_ip == self.source_ip:
-            # TODO:发往客户端
-            pass
+            self.pkg_body.append(source_ip)
+            self.pkg_body.append(body)
+            print('来自' + source_ip + '的分组将发往客户端')
         else:
-            self.send_pkg(next_jmp, self.pkg_recv_port, 1, 0, final_dest_ip, json.dumps(body))
+            self.send_pkg(source_ip, next_jmp, self.pkg_recv_port, 1, 0, final_dest_ip, json.dumps(body))
+            print('转发来自' + source_ip + '的分组，将发往目的地' + final_dest_ip + '，下一跳IP为' + next_jmp)
         if not keep_alive:
             self.sock_connect[ip].close()
             del self.sock_connect[ip]
-        self.pkg_thread_number -= 1

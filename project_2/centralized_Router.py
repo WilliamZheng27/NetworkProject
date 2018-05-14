@@ -4,6 +4,7 @@ import socket
 import json
 import copy
 import time
+import threading
 
 Method_Route_Msg = '0'
 Method_Data_Pack = '1'
@@ -142,34 +143,53 @@ class RouterLS(Router):
         self.send_link_table()
         print('Router online')
         self.recv_routing_table()
+        self.routing()
+        self.start_client()
+
+    def start_client(self):
+        t = threading.Thread(target=self.client())
+        t.start()
+
+    def wait(self):
         time.sleep(10)
         while self.network_obj.thread_number != 0:
             time.sleep(5)
-        self.client()
 
-    # TODO: 实现客户端（封装在Router中的函数）,未考虑路由表变更的情况
+    # TODO: 实现客户端（封装在RouterLS中的函数）
     def client(self):
-        print('可到达的IP有', end=' ')
-        for ip in self.routingTable.keys():
-            print(ip, end=' or ')
-        print('send指令格式为: send-(内容)-(目的IP)')
         while True:
-            user_input = input('Command: ')
-            if user_input.lower() == 'exit':
-                self.router_exit()
-                break
-            else:
-                Input = user_input.split('-')
-                if Input[0].lower() == 'send':
-                    data = Input[1]
-                    dest_ip = Input[2]
-                    if dest_ip in self.routingTable.keys():
-                        self.network_obj.send_pkg(self.routingTable[dest_ip], self.network_obj.pkg_recv_port, 1, 0,
-                                                  dest_ip, data)
-                    else:
-                        print('错误的目的IP地址:', dest_ip)
+            self.wait()
+            print('可到达的IP有', end=' ')
+            for ip in self.routingTable.keys():
+                print(ip, end=' or ')
+            print('send指令格式为: send-(内容)-(目的IP)')
+            while True:
+                if len(self.network_obj.pkg_body) != 0:
+                    pkg = self.network_obj.pkg_body
+                    print('收到来自' + pkg[0] + '的信息:', pkg[1])
+                    del self.network_obj.pkg_body[0]
+                    del self.network_obj.pkg_body[1]
+                if self.network_obj.thread_number != 0:
+                    break
+                user_input = input('请输入指令: ')
+                if user_input.lower() == 'exit':
+                    self.router_exit()
+                    return
                 else:
-                    print('错误的指令:', user_input)
+                    Input = user_input.split('-')
+                    if Input[0].lower() == 'send':
+                        if len(Input) != 3:
+                            print('错误指令:', user_input)
+                        else:
+                            data = Input[1]
+                            dest_ip = Input[2]
+                            if dest_ip in self.routingTable.keys():
+                                self.network_obj.send_pkg(self.network_obj.source_ip, self.routingTable[dest_ip],
+                                                          self.network_obj.pkg_recv_port, 1, 0, dest_ip, data)
+                            else:
+                                print('错误的目的IP地址:', dest_ip)
+                    else:
+                        print('错误指令:', user_input)
 
     def __msg_handler(self, msg):
         if msg[0] == Method_Route_Msg:
@@ -180,7 +200,9 @@ class RouterLS(Router):
                 del self.routingTable[item]
             if msg[6] != '0':
                 self.create_routing_table(msg)
-            print('路由表', self.routingTable)
+            print('\n路由表发生改变')
+            for key, value in self.routingTable.items():
+                print('目的IP:', key, '下一跳IP:', value)
 
     # 生成路由表
     def create_routing_table(self, msg):
@@ -199,6 +221,7 @@ class RouterLS(Router):
         data = json.dumps(data)
         self.network_obj.seng_data(self.center_server_ip, self.recv_port, 3, 0, data)
 
+    # 路由器离线
     def router_exit(self):
         self.network_obj.seng_data(self.center_server_ip, self.recv_port, 4, 0, '')
         print('Router offline')
