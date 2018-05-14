@@ -162,7 +162,7 @@ class RouterLS(Router):
             print('可到达的IP有', end=' ')
             for ip in self.routingTable.keys():
                 print(ip, end='  ')
-            print('send指令格式为: send-(内容)-(目的IP)')
+            print('\nsend指令格式为: send-(内容)-(目的IP)')
             while True:
                 if len(self.network_obj.pkg_body) != 0:
                     pkg = self.network_obj.pkg_body

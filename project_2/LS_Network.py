@@ -100,7 +100,6 @@ class Network:
             respose += str(0)
         respose += str(body_len)
         respose += '\r\n'
-        print(len(respose.encode()))
         respose += body
         respose = respose.encode()
         return respose
