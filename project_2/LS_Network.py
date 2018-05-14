@@ -23,6 +23,7 @@ class Network:
         self.pkg_body = []
         self.router_table = {}
 
+    # 获取主机IP
     def get_host_ip(self):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -32,19 +33,23 @@ class Network:
             s.close()
         return ip
 
+    #创建连接
     def connect(self, target_ip, target_port):
         self.sock_send = socket.socket()
         self.sock_send.connect((target_ip, target_port))
 
+    #发送数据
     def __send(self, sock, data):
         sock.send(data)
 
+    #监听来自中心服务器的连接
     def LS_start_listen(self, call_back_request_handler):
         self.sock_recv.bind((self.source_ip, self.recv_port))
         self.sock_recv.listen(max_listen_num)
         t = threading.Thread(target=self.LS__thread_accept, args=[call_back_request_handler])
         t.start()
 
+    #发送数据包
     def seng_data(self, target_ip, target_port, method, keep_alive, data=''):
         self.connect(target_ip, target_port)
         pkg = self.LS__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
@@ -52,6 +57,7 @@ class Network:
         if not keep_alive:
             self.sock_send.close()
 
+    #每当有中心服务器连接过来后就建立新的线程
     def LS__thread_accept(self, call_back_request_handler):
         while True:
             tmp_obj, ipadrs = self.sock_recv.accept()
@@ -60,6 +66,7 @@ class Network:
             t.start()
             self.thread_number += 1
 
+    #处理来自中心服务器的数据包
     def LS__requestHandler(self, ip, call_back_handler):
         data = b''
         data += self.LS_recieve(self.sock_connect[ip], LS_head_len)
@@ -79,6 +86,7 @@ class Network:
             del self.sock_connect[ip]
         self.thread_number -= 1
 
+    #生成数据包
     def LS__pack_request(self, method, target_ip, target_port, body_len, keep_alive, body):
         respose = ''
         respose += str(method)
@@ -104,12 +112,14 @@ class Network:
         respose = respose.encode()
         return respose
 
+    #接收数据包
     def LS_recieve(self, sock, data_size):
         buffer = b''
         while len(buffer) < data_size:
             buffer += sock.recv(data_size)
         return buffer
 
+    #发送分组
     def send_pkg(self, source_ip, next_jmp, pkg_recv_port, method, keep_alive, finial_dest_ip, data=''):
         self.connect(next_jmp, pkg_recv_port)
         pkg = self.LS__pack_request(1, finial_dest_ip, self.pkg_recv_port, len(data), 0, data)
@@ -117,12 +127,14 @@ class Network:
         if not keep_alive:
             self.sock_send.close()
 
+    #监听来自其他路由器的分组
     def LS_start_listen_pkg(self):
         self.sock_pkg_recv.bind((self.source_ip, self.pkg_recv_port))
         self.sock_pkg_recv.listen(max_listen_num)
         t = threading.Thread(target=self.LS__thread_accept_pkg)
         t.start()
 
+    #每当有分组传来时建立新的线程处理
     def LS__thread_accept_pkg(self):
         while True:
             tmp_obj, ipadrs = self.sock_pkg_recv.accept()
@@ -130,7 +142,7 @@ class Network:
             t = threading.Thread(target=self.LS__pkgHandler, args=[ipadrs[0]])
             t.start()
 
-    # TODO: 转发数据包
+    # 转发数据包
     def LS__pkgHandler(self, ip):
         data = b''
         data += self.LS_recieve(self.sock_connect[ip], LS_head_len)
