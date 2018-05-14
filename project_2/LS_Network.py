@@ -149,7 +149,7 @@ class Network:
             print('\n来自' + source_ip + '的分组将发往客户端')
         else:
             next_jmp = self.router_table[final_dest_ip]
-            self.send_pkg(source_ip, next_jmp, self.pkg_recv_port, 1, 0, final_dest_ip, json.dumps(body))
+            self.send_pkg(source_ip, next_jmp, self.pkg_recv_port, 1, 0, final_dest_ip, body)
             print('\n转发来自' + source_ip + '的分组，将发往目的地' + final_dest_ip + '，下一跳IP为' + next_jmp)
         if not keep_alive:
             self.sock_connect[ip].close()

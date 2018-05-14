@@ -151,7 +151,7 @@ class RouterLS(Router):
         t.start()
 
     def wait(self):
-        time.sleep(10)
+        time.sleep(15)
         while self.network_obj.thread_number != 0:
             time.sleep(5)
 
