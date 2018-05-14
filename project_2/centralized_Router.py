@@ -205,7 +205,7 @@ class RouterLS(Router):
                 self.create_routing_table(msg)
             self.network_obj.router_table = self.routingTable
             print('\n路由表发生改变')
-            if msg[6] != '0':
+            if len(msg[6]) != 0:
                 for key, value in self.routingTable.items():
                     print('目的IP:', key, '下一跳IP:', value)
             else:
