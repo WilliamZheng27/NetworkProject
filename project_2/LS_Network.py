@@ -19,6 +19,7 @@ class Network:
         self.target_ip = ''
         self.target_port = 0
         self.sock_recv = socket.socket()
+        self.sock_pkg_recv = socket.socket()
         self.sock_connect = {}
         self.thread_number = 0
         self.pkg_body = []
@@ -148,14 +149,14 @@ class Network:
         return respose
 
     def LS_start_listen_pkg(self):
-        self.sock_recv.bind((self.source_ip, self.pkg_recv_port))
-        self.sock_recv.listen(max_listen_num)
+        self.sock_pkg_recv.bind((self.source_ip, self.pkg_recv_port))
+        self.sock_pkg_recv.listen(max_listen_num)
         t = threading.Thread(target=self.LS__thread_accept_pkg)
         t.start()
 
     def LS__thread_accept_pkg(self):
         while True:
-            tmp_obj, ipadrs = self.sock_recv.accept()
+            tmp_obj, ipadrs = self.sock_pkg_recv.accept()
             self.sock_connect[ipadrs[0]] = tmp_obj
             t = threading.Thread(target=self.LS__pkgHandler, args=[ipadrs[0]])
             t.start()

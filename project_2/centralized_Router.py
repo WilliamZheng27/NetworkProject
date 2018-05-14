@@ -155,13 +155,13 @@ class RouterLS(Router):
         while self.network_obj.thread_number != 0:
             time.sleep(5)
 
-    # TODO: 实现客户端（封装在RouterLS中的函数）
+    # TODO: 实现客户端（封装在RouterLS中的函数），数据包的头部长有问题
     def client(self):
         while True:
             self.wait()
             print('可到达的IP有', end=' ')
             for ip in self.routingTable.keys():
-                print(ip, end=' or ')
+                print(ip, end='  ')
             print('send指令格式为: send-(内容)-(目的IP)')
             while True:
                 if len(self.network_obj.pkg_body) != 0:
