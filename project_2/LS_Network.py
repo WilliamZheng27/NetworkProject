@@ -139,19 +139,19 @@ class Network:
         data = data.split('\r\n')
         source_ip = data[1]
         final_dest_ip = data[3]
-        next_jmp = self.router_table[final_dest_ip]
         keep_alive = int(data[5])
         body_len = int(data[6])
         data = b''
         data += self.LS_recieve(self.sock_connect[ip], body_len)
-        body = json.loads(data.decode())
+        body = data.decode()
         if final_dest_ip == self.source_ip:
             self.pkg_body.append(source_ip)
             self.pkg_body.append(body)
-            print('来自' + source_ip + '的分组将发往客户端')
+            print('\n来自' + source_ip + '的分组将发往客户端')
         else:
+            next_jmp = self.router_table[final_dest_ip]
             self.send_pkg(source_ip, next_jmp, self.pkg_recv_port, 1, 0, final_dest_ip, json.dumps(body))
-            print('转发来自' + source_ip + '的分组，将发往目的地' + final_dest_ip + '，下一跳IP为' + next_jmp)
+            print('\n转发来自' + source_ip + '的分组，将发往目的地' + final_dest_ip + '，下一跳IP为' + next_jmp)
         if not keep_alive:
             self.sock_connect[ip].close()
             del self.sock_connect[ip]

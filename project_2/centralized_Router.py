@@ -168,10 +168,13 @@ class RouterLS(Router):
                     pkg = self.network_obj.pkg_body
                     print('收到来自' + pkg[0] + '的信息:', pkg[1])
                     del self.network_obj.pkg_body[0]
-                    del self.network_obj.pkg_body[1]
+                    del self.network_obj.pkg_body[0]
                 if self.network_obj.thread_number != 0:
                     break
                 user_input = input('请输入指令: ')
+                if not user_input:
+                    print(' ')
+                    continue
                 if user_input.lower() == 'exit':
                     self.router_exit()
                     return
