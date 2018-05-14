@@ -21,7 +21,7 @@ class Router:
         self.recv_port = recv_port
         self.network_obj = LS_Network.Network(send_port, recv_port)
 
-    # TODO: 转发数据包
+    # 转发数据包
     def routing(self):
         self.network_obj.LS_start_listen_pkg()
 
@@ -155,7 +155,7 @@ class RouterLS(Router):
         while self.network_obj.thread_number != 0:
             time.sleep(5)
 
-    # TODO: 实现客户端（封装在RouterLS中的函数），数据包的头部长有问题
+    # 实现客户端（封装在RouterLS中的函数）
     def client(self):
         while True:
             self.wait()
