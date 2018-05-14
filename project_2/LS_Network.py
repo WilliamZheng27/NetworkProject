@@ -6,7 +6,6 @@ import json
 
 max_listen_num = 5
 LS_head_len = 59
-pkg_head_len = 73
 
 
 class Network:
@@ -16,13 +15,13 @@ class Network:
         self.pkg_recv_port = 22333
         self.source_ip = self.get_host_ip()
         self.sock_send = socket.socket()
-        self.target_ip = ''
         self.target_port = 0
         self.sock_recv = socket.socket()
         self.sock_pkg_recv = socket.socket()
         self.sock_connect = {}
         self.thread_number = 0
         self.pkg_body = []
+        self.router_table = {}
 
     def get_host_ip(self):
         try:
@@ -36,7 +35,6 @@ class Network:
     def connect(self, target_ip, target_port):
         self.sock_send = socket.socket()
         self.sock_send.connect((target_ip, target_port))
-        self.target_ip = target_ip
 
     def __send(self, sock, data):
         sock.send(data)
@@ -102,6 +100,7 @@ class Network:
             respose += str(0)
         respose += str(body_len)
         respose += '\r\n'
+        print(len(respose.encode()))
         respose += body
         respose = respose.encode()
         return respose
@@ -112,41 +111,12 @@ class Network:
             buffer += sock.recv(data_size)
         return buffer
 
-    def send_pkg(self, source_ip, target_ip, target_port, method, keep_alive, finial_dest_ip, data=''):
-        self.connect(target_ip, target_port)
-        pkg = self.LS__pack_pkg(method, source_ip, target_ip, target_port, len(data), keep_alive, finial_dest_ip,
-                                data='')
+    def send_pkg(self, source_ip, next_jmp, pkg_recv_port, method, keep_alive, finial_dest_ip, data=''):
+        self.connect(next_jmp, pkg_recv_port)
+        pkg = self.LS__pack_request(1, finial_dest_ip, self.pkg_recv_port, len(data), 0, data)
         self.__send(self.sock_send, pkg)
         if not keep_alive:
             self.sock_send.close()
-
-    def LS__pack_pkg(self, method, source_ip, target_ip, target_port, data_length, keep_alive, finial_dest_ip, data=''):
-        respose = ''
-        respose += str(method)
-        respose += '\r\n'
-        respose += source_ip
-        respose += '\r\n'
-        respose += str(self.send_port)
-        respose += '\r\n'
-        respose += target_ip
-        respose += '\r\n'
-        respose += str(target_port)
-        respose += '\r\n'
-        respose += str(keep_alive)
-        respose += '\r\n'
-        if 9 < data_length < 100:
-            respose += str(0)
-        elif data_length < 10:
-            respose += str(0)
-            respose += str(0)
-        respose += str(data_length)
-        respose += '\r\n'
-        respose += finial_dest_ip
-        respose += '\r\n'
-        print(len(respose.encode()))
-        respose += data
-        respose = respose.encode()
-        return respose
 
     def LS_start_listen_pkg(self):
         self.sock_pkg_recv.bind((self.source_ip, self.pkg_recv_port))
@@ -164,14 +134,14 @@ class Network:
     # TODO: 转发数据包
     def LS__pkgHandler(self, ip):
         data = b''
-        data += self.LS_recieve(self.sock_connect[ip], pkg_head_len)
+        data += self.LS_recieve(self.sock_connect[ip], LS_head_len)
         data = data.decode()
         data = data.split('\r\n')
         source_ip = data[1]
-        next_jmp = data[3]
+        final_dest_ip = data[3]
+        next_jmp = self.router_table[final_dest_ip]
         keep_alive = int(data[5])
         body_len = int(data[6])
-        final_dest_ip = data[7]
         data = b''
         data += self.LS_recieve(self.sock_connect[ip], body_len)
         body = json.loads(data.decode())

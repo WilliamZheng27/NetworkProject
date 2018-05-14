@@ -200,9 +200,13 @@ class RouterLS(Router):
                 del self.routingTable[item]
             if msg[6] != '0':
                 self.create_routing_table(msg)
+            self.network_obj.router_table = self.routingTable
             print('\n路由表发生改变')
-            for key, value in self.routingTable.items():
-                print('目的IP:', key, '下一跳IP:', value)
+            if msg[6] != '0':
+                for key, value in self.routingTable.items():
+                    print('目的IP:', key, '下一跳IP:', value)
+            else:
+                print('全局只有这一台路由器')
 
     # 生成路由表
     def create_routing_table(self, msg):
