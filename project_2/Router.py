@@ -111,6 +111,7 @@ class RouterDV(Router):
     # 路由器退出
     def router_exit(self):
         self.network_obj.stop_listen()
+        self.network_obj.disconnect()
 
     #客户端作为一个线程在RouterDV中执行
     def start_client(self):
