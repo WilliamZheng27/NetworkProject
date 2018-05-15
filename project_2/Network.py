@@ -37,17 +37,20 @@ class Network:
             s.close()
         return ip
 
+    # 建立连接
     def connect(self, target_ip, target_port):
         self.sock_send = socket.socket()
         self.sock_send.connect((target_ip, target_port))
         self.target_ip = target_ip
         self.send_status = 1
 
+    # 断开连接
     def disconnect(self):
         if not self.send_status:
             raise Exception('Not connected')
         self.send_status = 0
 
+    # 新建线程监听邻接路由发来的信息
     def start_listen(self, call_back_request_handler):
         if self.recv_status:
             raise Exception('Already listening')
@@ -57,12 +60,14 @@ class Network:
         t.start()
         self.recv_status = 1
 
+    # 停止监听
     def stop_listen(self):
         if not self.recv_status:
             raise Exception('Not listening')
         self.sock_recv.close()
         self.recv_status = 0
 
+    # 处理邻接路由发来的路由表
     def request(self, target_ip, target_port, method, keep_alive, data=''):
         self.connect(target_ip, target_port)
         self.send_status = 1
@@ -79,10 +84,12 @@ class Network:
             self.sock_send.close()
         return respose
 
+    # 对已接收的信息进行回复
     def response(self, target_ip, target_port, method, keep_alive, data=''):
         pkg = self.__pack_request(method, target_ip, target_port, len(data), keep_alive, data)
         self.__send(self.sock_connect[target_ip], pkg)
 
+    # 处理邻接路由发来的路由表
     def __requestHandler(self, ip, call_back_handler):
         while True:
             data = b''
@@ -101,13 +108,16 @@ class Network:
                 self.sock_connect[ip].close()
                 del self.sock_connect[ip]
                 break
+        self.thread_number -= 1
 
+    # 每当邻接路由发送路由表时，建立新的线程处理信息
     def __thread_accept(self, call_back_request_handler):
         while True:
             tmp_obj, ipadrs = self.sock_recv.accept()
             self.sock_connect[ipadrs[0]] = tmp_obj
             t = threading.Thread(target=self.__requestHandler, args=[ipadrs[0], call_back_request_handler])
             t.start()
+            self.thread_number += 1
 
     # 生成数据包
     def __pack_request(self, method, target_ip, target_port, body_len, keep_alive, body):

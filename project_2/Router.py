@@ -21,8 +21,8 @@ class Router:
         self.recv_port = recv_port
         self.network_obj = Network.Network(send_port, recv_port)
 
-    # TODO:转发数据包，需添加至RouterDV初始化中，执行这个函数后，将创建一个新的线程监听数据包并转发
-    def routing(self, pkg):
+    # 转发数据包，执行这个函数后，将创建一个新的线程监听数据包并转发
+    def routing(self):
         self.network_obj.LS_start_listen_pkg()
 
 
@@ -39,6 +39,8 @@ class RouterDV(Router):
                 except socket.error:
                     link_table[rt][0] = 0
                     continue
+        self.start_client()
+        self.routing()
 
     # 发送本路由的路由信息
     def send_routing_msg(self, type, request_ip=''):
@@ -64,6 +66,7 @@ class RouterDV(Router):
                 print('Sending to ' + rt + '...')
                 self.network_obj.request(rt, self.recv_port, 0, 0, json.dumps(de_possion))
 
+    # 根据数据包头的信息进行不同的处理
     def __msg_handler(self, msg):
         if msg[0] == Method_Route_Msg:
             self.network_obj.response(msg[1], self.send_port, 5, 0)
@@ -100,18 +103,20 @@ class RouterDV(Router):
         # 向其他路由发送更新后的路由表
         if flag:
             self.send_routing_msg(0)
+            print('\n路由表已发生改变')
+            for key, value in self.routingTable.items():
+                print('目的IP:', key, '下一跳IP:', value[1])
         return
 
-    # TODO: 路由器退出，可能需要编写，在client方法中可能需要修改
+    # 路由器退出
     def router_exit(self):
-        pass
+        self.network_obj.stop_listen()
 
-    #TODO: 客户端作为一个线程在RouterDV中执行，需要加入RouterDV的初始化中
+    #客户端作为一个线程在RouterDV中执行
     def start_client(self):
         t = threading.Thread(target=self.client())
         t.start()
 
-    #TODO: wait方法用于等待路由表是否稳定，通过路由器"接受路由表"的线程数来判断，所以在"接受路由表"和"广播路由表"的线程中需要加入"修改Thread_number"这一指令
     def wait(self):
         time.sleep(15)
         while self.network_obj.thread_number != 0:
